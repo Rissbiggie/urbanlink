@@ -1,0 +1,15 @@
+meta {
+  name: Get  driver earnings
+  type: http
+  seq: 11
+}
+
+get {
+  url: http://localhost:8000/api/driver/earnings
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

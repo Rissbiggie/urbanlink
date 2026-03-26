@@ -1,0 +1,15 @@
+meta {
+  name: start a ride
+  type: http
+  seq: 9
+}
+
+post {
+  url: http://localhost:8000/api/driver/rides/{id}/start
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

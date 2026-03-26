@@ -1,0 +1,15 @@
+meta {
+  name: Update application
+  type: http
+  seq: 4
+}
+
+put {
+  url: http://localhost:8000/api/applications/{id}
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

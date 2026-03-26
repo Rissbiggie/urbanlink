@@ -1,0 +1,15 @@
+meta {
+  name: Get compliance snapshot
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:8000/api/snapshot
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

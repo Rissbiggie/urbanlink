@@ -1,0 +1,15 @@
+meta {
+  name: Cancel Ride 
+  type: http
+  seq: 5
+}
+
+post {
+  url: http://localhost:8000/api/rides/{id}/cancel
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

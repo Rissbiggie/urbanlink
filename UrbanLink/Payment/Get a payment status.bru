@@ -1,0 +1,15 @@
+meta {
+  name: Get a payment status
+  type: http
+  seq: 4
+}
+
+get {
+  url: http://localhost:8000/api/payments/{id}/status
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

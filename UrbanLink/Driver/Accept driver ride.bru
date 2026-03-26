@@ -1,0 +1,15 @@
+meta {
+  name: Accept driver ride
+  type: http
+  seq: 8
+}
+
+post {
+  url: http://localhost:8000/api/driver/rides/{id}/accept
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Get sha compliance
+  type: http
+  seq: 5
+}
+
+get {
+  url: http://localhost:8000/api/compliance/sha
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

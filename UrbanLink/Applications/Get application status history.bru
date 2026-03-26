@@ -1,0 +1,15 @@
+meta {
+  name: Get application status history
+  type: http
+  seq: 6
+}
+
+get {
+  url: http://localhost:8000/api/applications/{id}/status-history
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

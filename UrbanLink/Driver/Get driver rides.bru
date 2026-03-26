@@ -1,0 +1,15 @@
+meta {
+  name: Get driver rides
+  type: http
+  seq: 7
+}
+
+get {
+  url: http://localhost:8000/api/driver/rides
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

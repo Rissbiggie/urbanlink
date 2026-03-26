@@ -1,0 +1,15 @@
+meta {
+  name: Rate a ride
+  type: http
+  seq: 6
+}
+
+post {
+  url: http://localhost:8000/api/rides/{id}/rate
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

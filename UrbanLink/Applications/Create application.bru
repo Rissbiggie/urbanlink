@@ -1,0 +1,15 @@
+meta {
+  name: Create application
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8000/api/applications
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

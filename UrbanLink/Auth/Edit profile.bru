@@ -1,0 +1,25 @@
+meta {
+  name: Edit profile
+  type: http
+  seq: 4
+}
+
+put {
+  url: http://localhost:8000/api/auth/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: 7|nFdFNOxdoWe8qlmI4kFpc7GnuUPZhbTGbyedDWax632d3098
+}
+
+body:json {
+  {
+  "name":"osama"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

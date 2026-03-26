@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: urbanlink-app
+    image: urbanlink-app:latest
+    restart: unless-stopped
+    working_dir: /var/www
+    environment:
+      - APP_NAME=UrbanLink
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_URL=http://localhost:8000
+      - APP_KEY=${APP_KEY}
+      - DB_CONNECTION=sqlite
+      - DB_DATABASE=/var/www/database/database.sqlite
+      # Updated to use the Redis service below
+      - CACHE_STORE=redis
+      - SESSION_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+      - REDIS_HOST=redis
+      - VITE_API_URL=http://localhost:8000/api
+    ports:
+      - "8000:80" # Host 8000 -> Container Nginx 80
+    volumes:
+      - .:/var/www            
+      - ./storage:/var/www/storage
+      - ./database:/var/www/database
+      - ./bootstrap/cache:/var/www/bootstrap/cache
+      - ./public/build:/var/www/public/build
+    networks:
+      - urbanlink-network
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: urbanlink-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - urbanlink-network
+
+networks:
+  urbanlink-network:
+    driver: bridge
+
+volumes:
+  redis-data:

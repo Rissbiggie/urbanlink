@@ -1,0 +1,15 @@
+meta {
+  name: Get Kra compliance
+  type: http
+  seq: 2
+}
+
+get {
+  url: http://localhost:8000/api/compliance/kra
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

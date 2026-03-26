@@ -1,0 +1,15 @@
+meta {
+  name: List applications
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:8000/api/applications
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Get driver Map
+  type: http
+  seq: 6
+}
+
+get {
+  url: http://localhost:8000/api/driver/map
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

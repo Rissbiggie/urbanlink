@@ -1,0 +1,15 @@
+meta {
+  name: Get driver profile
+  type: http
+  seq: 2
+}
+
+get {
+  url: http://localhost:8000/api/driver/profile
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

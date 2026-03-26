@@ -1,0 +1,15 @@
+meta {
+  name:  dashboard
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:8000/api/admin/dashboard
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

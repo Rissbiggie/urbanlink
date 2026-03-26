@@ -1,0 +1,15 @@
+meta {
+  name: Application process
+  type: http
+  seq: 4
+}
+
+post {
+  url: http://localhost:8000/api/admin/applications/{id}/process
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
