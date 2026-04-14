@@ -119,4 +119,53 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Password Policies
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for password complexity requirements and policies.
+    |
+    */
+
+    'passwords' => [
+        'users' => [
+            'provider' => 'users',
+            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+
+        // Password policy configuration
+        'min_length' => env('AUTH_PASSWORD_MIN_LENGTH', 8),
+        'max_length' => env('AUTH_PASSWORD_MAX_LENGTH', 128),
+        'require_uppercase' => env('AUTH_PASSWORD_REQUIRE_UPPERCASE', true),
+        'require_lowercase' => env('AUTH_PASSWORD_REQUIRE_LOWERCASE', true),
+        'require_numbers' => env('AUTH_PASSWORD_REQUIRE_NUMBERS', true),
+        'require_symbols' => env('AUTH_PASSWORD_REQUIRE_SYMBOLS', true),
+        'prevent_repeated_chars' => env('AUTH_PASSWORD_PREVENT_REPEATED_CHARS', false),
+        'prevent_sequential' => env('AUTH_PASSWORD_PREVENT_SEQUENTIAL', false),
+        'prevent_common_passwords' => env('AUTH_PASSWORD_PREVENT_COMMON', true),
+        'max_age_days' => env('AUTH_PASSWORD_MAX_AGE_DAYS', 90),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Management
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for session security and management.
+    |
+    */
+
+    'sessions' => [
+        'max_concurrent' => env('AUTH_SESSIONS_MAX_CONCURRENT', 3),
+        'max_idle_minutes' => env('AUTH_SESSIONS_MAX_IDLE_MINUTES', 60),
+        'max_unique_ips' => env('AUTH_SESSIONS_MAX_UNIQUE_IPS', 5),
+        'max_unique_countries' => env('AUTH_SESSIONS_MAX_UNIQUE_COUNTRIES', 3),
+        'max_sessions_per_hour' => env('AUTH_SESSIONS_MAX_PER_HOUR', 10),
+        'force_logout_on_suspicious' => env('AUTH_SESSIONS_FORCE_LOGOUT_SUSPICIOUS', true),
+        'track_location' => env('AUTH_SESSIONS_TRACK_LOCATION', true),
+    ],
+
 ];

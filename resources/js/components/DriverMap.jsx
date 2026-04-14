@@ -3,21 +3,24 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// 1. Import the actual image files so Vite knows where they are
+// 1. Fix default icon paths for Leaflet in Vite
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
-// 2. Fix default icon paths for Leaflet using the imported variables
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
     iconRetinaUrl: markerIcon2x,
     iconUrl: markerIcon,
     shadowUrl: markerShadow,
 });
+
+/**
+ * HELPER: Simple distance calculation for initial sorting
+ */
 function haversineDistance([lat1, lng1], [lat2, lng2]) {
     const toRad = (deg) => (deg * Math.PI) / 180;
-    const R = 6371; // Earth radius km
+    const R = 6371; 
     const dLat = toRad(lat2 - lat1);
     const dLng = toRad(lng2 - lng1);
     const a =
@@ -28,17 +31,21 @@ function haversineDistance([lat1, lng1], [lat2, lng2]) {
     return R * c;
 }
 
+/**
+ * COMPONENT: Auto-adjust map zoom to see all markers
+ */
 function FitBounds({ bounds }) {
     const map = useMap();
-
     useEffect(() => {
         if (!bounds || bounds.length === 0) return;
-        map.fitBounds(bounds, { padding: [40, 40] });
+        map.fitBounds(bounds, { padding: [50, 50] });
     }, [map, bounds]);
-
     return null;
 }
 
+/**
+ * MAIN MAP COMPONENT
+ */
 export default function DriverMap({
     driverLocation,
     requests = [],
@@ -46,153 +53,69 @@ export default function DriverMap({
     activeRides = [],
     activeRequest,
     assignedRide,
-    height = 400,
+    height = '100%', // Changed to 100% to fill container
 }) {
     const [routeGeo, setRouteGeo] = useState(null);
     const [routeInfo, setRouteInfo] = useState(null);
 
-    const routeDistanceKm = useMemo(() => {
-        if (routeInfo?.distance != null) {
-            return routeInfo.distance / 1000;
-        }
-
-        if (!assignedRide) return null;
-        const pickupLat = Number(assignedRide.pickup_lat);
-        const pickupLng = Number(assignedRide.pickup_lng);
-        const dropoffLat = Number(assignedRide.dropoff_lat);
-        const dropoffLng = Number(assignedRide.dropoff_lng);
-        if (!pickupLat || !pickupLng || !dropoffLat || !dropoffLng) return null;
-        return haversineDistance([pickupLat, pickupLng], [dropoffLat, dropoffLng]);
-    }, [assignedRide, routeInfo]);
-
+    // --- 1. Markers Logic ---
     const markers = useMemo(() => {
         const items = [];
 
+        // Driver's current position
         if (driverLocation) {
             items.push({
                 key: 'driver',
-                label: 'You (driver)',
+                label: 'YOUR LOCATION',
                 position: [driverLocation.lat, driverLocation.lng],
-                color: 'blue',
+                isDriver: true
             });
         }
 
-        otherDrivers.forEach((driver) => {
-            if (!driver.current_lat || !driver.current_lng) return;
-            items.push({
-                key: `driver-${driver.id}`,
-                label: `Driver: ${driver.user_name || driver.user?.name || driver.id}`,
-                position: [Number(driver.current_lat), Number(driver.current_lng)],
-                color: 'gray',
-            });
-        });
-
-        activeRides.forEach((ride) => {
-            if (!ride.pickup_lat || !ride.pickup_lng) return;
-            items.push({
-                key: `active-ride-${ride.id}`,
-                label: `Active ride: ${ride.ride_reference}`,
-                position: [Number(ride.pickup_lat), Number(ride.pickup_lng)],
-                color: 'teal',
-                request: {
-                    address: ride.pickup_address,
-                },
-            });
-        });
-
+        // Assigned Job: Pickup and Dropoff
         if (assignedRide) {
-            const pickupLat = Number(assignedRide.pickup_lat);
-            const pickupLng = Number(assignedRide.pickup_lng);
-            const dropoffLat = Number(assignedRide.dropoff_lat);
-            const dropoffLng = Number(assignedRide.dropoff_lng);
+            const pLat = Number(assignedRide.pickup_lat);
+            const pLng = Number(assignedRide.pickup_lng);
+            const dLat = Number(assignedRide.dropoff_lat);
+            const dLng = Number(assignedRide.dropoff_lng);
 
-            if (pickupLat && pickupLng) {
+            if (pLat && pLng) {
                 items.push({
-                    key: `assigned-pickup-${assignedRide.id}`,
-                    label: `Assigned ride (${assignedRide.ride_reference}) pickup`,
-                    position: [pickupLat, pickupLng],
-                    color: 'orange',
-                    request: {
-                        address: assignedRide.pickup_address,
-                    },
+                    key: `pickup-${assignedRide.id}`,
+                    label: `PICKUP: ${assignedRide.ride_reference}`,
+                    position: [pLat, pLng],
+                    address: assignedRide.pickup_address,
+                    type: 'pickup'
                 });
             }
-
-            if (dropoffLat && dropoffLng) {
+            if (dLat && dLng) {
                 items.push({
-                    key: `assigned-dropoff-${assignedRide.id}`,
-                    label: `Assigned ride (${assignedRide.ride_reference}) dropoff`,
-                    position: [dropoffLat, dropoffLng],
-                    color: 'purple',
-                    request: {
-                        address: assignedRide.dropoff_address,
-                    },
+                    key: `dropoff-${assignedRide.id}`,
+                    label: `DROPOFF: ${assignedRide.ride_reference}`,
+                    position: [dLat, dLng],
+                    address: assignedRide.dropoff_address,
+                    type: 'dropoff'
                 });
             }
         }
 
-        const requestWithScore = (req) => {
-            const distance =
-                driverLocation && req?.pickup?.lat && req?.pickup?.lng
-                    ? haversineDistance([driverLocation.lat, driverLocation.lng], [req.pickup.lat, req.pickup.lng])
-                    : null;
-            const fare = Number(req.estimated_fare || 0);
-            const score = distance ? fare / distance : fare;
-            return { req, distance, score };
-        };
-
-        const sortedRequests = requests
-            .map(requestWithScore)
-            .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-            .map(({ req }) => req);
-
-        sortedRequests.forEach((req) => {
+        // Generic Requests
+        requests.forEach((req) => {
             if (req?.pickup?.lat && req?.pickup?.lng) {
                 items.push({
-                    key: `request-${req.ride_id}`,
-                    label: `Ride ${req.ride_reference} pickup`,
+                    key: `req-${req.ride_id}`,
+                    label: `REQUEST: ${req.ride_reference}`,
                     position: [req.pickup.lat, req.pickup.lng],
-                    color: activeRequest?.ride_id === req.ride_id ? 'green' : 'red',
-                    request: {
-                        address: req.pickup.address,
-                        score: req.estimated_fare ? `${req.estimated_fare} fare` : undefined,
-                    },
+                    address: req.pickup.address,
+                    type: 'request'
                 });
             }
         });
 
-        if (activeRequest && activeRequest.pickup?.lat && activeRequest.pickup?.lng) {
-            const exists = items.find((m) => m.key === `request-${activeRequest.ride_id}`);
-            if (!exists) {
-                items.push({
-                    key: `request-${activeRequest.ride_id}`,
-                    label: `Ride ${activeRequest.ride_reference} pickup`,
-                    position: [activeRequest.pickup.lat, activeRequest.pickup.lng],
-                    color: 'green',
-                    request: {
-                        address: activeRequest.pickup.address,
-                        score: activeRequest.estimated_fare ? `${activeRequest.estimated_fare} fare` : undefined,
-                    },
-                });
-            }
-        }
-
         return items;
-    }, [driverLocation, otherDrivers, requests, activeRequest, assignedRide]);
+    }, [driverLocation, requests, assignedRide]);
 
-    const bounds = useMemo(() => markers.map((m) => m.position), [markers]);
-
-    const center = driverLocation
-        ? [driverLocation.lat, driverLocation.lng]
-        : markers.length > 0
-        ? markers[0].position
-        : [0, 0];
-
-    const routeLine = useMemo(() => {
-        if (!routeGeo) return null;
-        return routeGeo;
-    }, [routeGeo]);
-
+    // --- 2. Routing Logic (OSRM API) ---
     useEffect(() => {
         if (!assignedRide) {
             setRouteGeo(null);
@@ -200,68 +123,79 @@ export default function DriverMap({
             return;
         }
 
-        const pickupLat = Number(assignedRide.pickup_lat);
-        const pickupLng = Number(assignedRide.pickup_lng);
-        const dropoffLat = Number(assignedRide.dropoff_lat);
-        const dropoffLng = Number(assignedRide.dropoff_lng);
+        const pLat = Number(assignedRide.pickup_lat);
+        const pLng = Number(assignedRide.pickup_lng);
+        const dLat = Number(assignedRide.dropoff_lat);
+        const dLng = Number(assignedRide.dropoff_lng);
 
-        if (!pickupLat || !pickupLng || !dropoffLat || !dropoffLng) {
-            setRouteGeo(null);
-            setRouteInfo(null);
-            return;
-        }
+        if (!pLat || !pLng || !dLat || !dLng) return;
 
-        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${pickupLng},${pickupLat};${dropoffLng},${dropoffLat}?overview=full&geometries=geojson&steps=false`;
+        const url = `https://router.project-osrm.org/route/v1/driving/${pLng},${pLat};${dLng},${dLat}?overview=full&geometries=geojson`;
 
-        fetch(osrmUrl)
-            .then((res) => res.json())
-            .then((data) => {
-                if (data?.routes?.[0]?.geometry?.coordinates) {
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                if (data.routes?.[0]) {
                     const coords = data.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
                     setRouteGeo(coords);
                     setRouteInfo({
-                        distance: data.routes[0].distance,
-                        duration: data.routes[0].duration,
+                        distance: data.routes[0].distance / 1000, // to KM
+                        duration: Math.round(data.routes[0].duration / 60) // to Min
                     });
                 }
             })
-            .catch(() => {
-                setRouteGeo(null);
-                setRouteInfo(null);
-            });
+            .catch(() => console.error("Routing error"));
     }, [assignedRide]);
 
+    // Bounds for FitBounds
+    const bounds = useMemo(() => markers.map(m => m.position), [markers]);
+
     return (
-        <div>
-            <MapContainer center={center} zoom={13} style={{ height, width: '100%' }}>
+        <div className="relative w-full h-full">
+            <MapContainer 
+                center={driverLocation ? [driverLocation.lat, driverLocation.lng] : [0, 0]} 
+                zoom={13} 
+                style={{ height: '100%', width: '100%' }}
+                zoomControl={false}
+            >
                 <TileLayer
-                    attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
+                    attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                {markers.map((marker) => (
-                    <Marker key={marker.key} position={marker.position}>
+
+                {markers.map((m) => (
+                    <Marker key={m.key} position={m.position}>
                         <Popup>
-                            <div className="text-sm">
-                                <div className="font-semibold">{marker.label}</div>
-                                {marker.request?.address && (
-                                    <div className="mt-1">{marker.request.address}</div>
-                                )}
-                                {marker.request?.score && (
-                                    <div className="mt-1 text-xs text-gray-500">{marker.request.score}</div>
-                                )}
+                            <div className="p-1">
+                                <p className="font-black text-[10px] uppercase tracking-widest text-emerald-600 mb-1">{m.label}</p>
+                                {m.address && <p className="text-[11px] font-bold text-slate-700 leading-tight">{m.address}</p>}
                             </div>
                         </Popup>
                     </Marker>
                 ))}
-                {routeLine && <Polyline positions={routeLine} pathOptions={{ color: 'orange', weight: 4 }} />}
+
+                {routeGeo && (
+                    <Polyline 
+                        positions={routeGeo} 
+                        pathOptions={{ color: '#10b981', weight: 5, opacity: 0.7, lineJoin: 'round' }} 
+                    />
+                )}
+
                 <FitBounds bounds={bounds} />
             </MapContainer>
-            {routeDistanceKm !== null && (
-                <div className="mt-2 text-sm text-gray-600">
-                    Route distance: <strong>{routeDistanceKm.toFixed(2)} km</strong>
-                    {routeInfo?.duration != null && (
-                        <> • ETA: <strong>{Math.round(routeInfo.duration / 60)} min</strong></>
-                    )}
+
+            {/* Floating Info Card */}
+            {routeInfo && (
+                <div className="absolute bottom-6 left-6 z-[1000] bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex gap-6 border border-slate-700">
+                    <div>
+                        <p className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] mb-1">Distance</p>
+                        <p className="font-black text-sm italic">{routeInfo.distance.toFixed(1)} KM</p>
+                    </div>
+                    <div className="w-px h-8 bg-slate-700"></div>
+                    <div>
+                        <p className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] mb-1">Travel Time</p>
+                        <p className="font-black text-sm italic">{routeInfo.duration} MIN</p>
+                    </div>
                 </div>
             )}
         </div>

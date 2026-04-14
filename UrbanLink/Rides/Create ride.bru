@@ -6,14 +6,30 @@ meta {
 
 post {
   url: http://localhost:8000/api/rides
-  body: none
+  body: json
   auth: bearer
 }
 
 auth:bearer {
-  token: 5|GinLGQzO8BMhKTuwfM0VCfJmNKE2up15QpDXaQrFeae64458
+  token: 37|3ngWwuy967W081E3XtosEmEB7xqBAzysneJJ5cL14957d3a9
+}
+
+body:json {
+  {
+    
+      "pickup_lat": -1.28638966868686,
+      "pickup_lng": 36.81722368686969,
+      "pickup_address": "Nairobi CBD, City Hall Way",
+      "dropoff_lat": -1.3191898988,
+      "dropoff_lng": 36.83656868686,
+      "dropoff_address": "South C, Nairobi",
+      "vehicle_type": "comfort",
+      "payment_method": "mpesa"
+  
+  }
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

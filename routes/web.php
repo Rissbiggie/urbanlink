@@ -6,7 +6,8 @@ Route::get('/', function () {
     return view('app');
 });
 
-// Catch-all route for the SPA
+// Catch-all route for the SPA (but not API routes)
 Route::get('/{any}', function () {
     return view('app');
-})->where('any', '.*');
+})->where('any', '^(?!api/).*')->name('spa');
+

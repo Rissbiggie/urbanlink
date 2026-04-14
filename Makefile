@@ -71,3 +71,9 @@ fix: ## Quick fix for Linux permission 500 errors
 
 restart: ## Restart all services
 	docker compose restart
+
+logs: ## View container logs
+	docker compose exec app tail -f storage/logs/laravel.log
+
+get-url:
+	@curl -s urbanlink-ngrok:4040/api/tunnels | jq -r '.tunnels[0].

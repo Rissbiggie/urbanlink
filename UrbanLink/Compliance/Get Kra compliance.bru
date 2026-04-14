@@ -7,9 +7,14 @@ meta {
 get {
   url: http://localhost:8000/api/compliance/kra
   body: none
-  auth: inherit
+  auth: bearer
+}
+
+auth:bearer {
+  token: 5|q2eXvYDgNgo7psbVLv7r5625YT9iQ0Re9s89TBch7dc224d9
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

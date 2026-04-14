@@ -1,15 +1,20 @@
 meta {
   name: Get driver rides
   type: http
-  seq: 7
+  seq: 5
 }
 
 get {
   url: http://localhost:8000/api/driver/rides
   body: none
-  auth: inherit
+  auth: bearer
+}
+
+auth:bearer {
+  token: 5|zHXOciVGk89t1DATgswH0FPVYsHOx4irDP9VHo3O8131c8ea
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

@@ -1,19 +1,28 @@
 meta {
   name: create driver location
   type: http
-  seq: 5
+  seq: 3
 }
 
 post {
   url: http://localhost:8000/api/driver/location
-  body: none
+  body: json
   auth: bearer
 }
 
 auth:bearer {
-  token: 6|lxpMd4V75Aw49SwwaGMr6IPTUvJLOo4l6rXpEWem25590bf8
+  token: 5|zHXOciVGk89t1DATgswH0FPVYsHOx4irDP9VHo3O8131c8ea
+}
+
+body:json {
+  {
+    
+      "lat": -1.286389,
+      "lng": 36.817223
+  }
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

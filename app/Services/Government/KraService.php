@@ -20,4 +20,36 @@ class KraService extends GovernmentService
 
         return $this->stubResponse();
     }
+
+    public function checkStatus(array $data = []): array
+    {
+        if (!$this->enabled() || !$this->baseUrl()) {
+            return $this->stubResponse([
+                'status' => 'unavailable',
+                'notes' => 'KRA API not configured; returning stubbed state.',
+            ]);
+        }
+
+        try {
+            $response = $this->client()->post('/api/v1/taxpayer/status', [
+                'kra_pin' => $data['kra_pin'] ?? null,
+                'national_id' => $data['national_id'] ?? null,
+            ]);
+
+            $result = $response->json();
+
+            return [
+                'reference' => 'KRA-' . uniqid(),
+                'status' => $result['status'] ?? 'unknown',
+                'tax_compliance' => $result['tax_compliance'] ?? 'unknown',
+                'last_filing_date' => $result['last_filing_date'] ?? null,
+                'notes' => $result['message'] ?? 'KRA status checked successfully',
+            ];
+        } catch (\Exception $e) {
+            return $this->stubResponse([
+                'status' => 'error',
+                'notes' => 'Failed to check KRA status: ' . $e->getMessage(),
+            ]);
+        }
+    }
 }

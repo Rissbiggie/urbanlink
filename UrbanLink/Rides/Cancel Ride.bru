@@ -1,15 +1,20 @@
 meta {
-  name: Cancel Ride 
+  name: Cancel Ride
   type: http
   seq: 5
 }
 
 post {
-  url: http://localhost:8000/api/rides/{id}/cancel
+  url: http://localhost:8000/api/rides/1/cancel
   body: none
-  auth: inherit
+  auth: bearer
+}
+
+auth:bearer {
+  token: 2|IBBsjQAs28WL7nSeIzlvpN4w1IRUoboUoGz73m3t4d4010f7
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

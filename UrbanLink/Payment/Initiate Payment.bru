@@ -6,14 +6,32 @@ meta {
 
 post {
   url: http://localhost:8000/api/payments/initiate
-  body: none
+  body: json
   auth: bearer
 }
 
 auth:bearer {
-  token: 5|GinLGQzO8BMhKTuwfM0VCfJmNKE2up15QpDXaQrFeae64458
+  token: 4|56etjF9TUzugx8YkhT2HWmBAbQOMWls5pFSlV7Fn46deaf2c
+}
+
+body:json {
+  {
+    "payable_type": 
+        "ride"
+      ,
+      "payable_id": 
+        "1"
+      ,
+      "phone": 
+        "0792092407"
+      ,
+      "amount": 
+        "100"
+      
+  }
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

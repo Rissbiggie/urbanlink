@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 
 class RouteServiceProvider extends ServiceProvider
@@ -19,8 +22,6 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->configureRateLimiting();
-
         $this->routes(function () {
             Route::middleware('web')
                 ->group(base_path('routes/web.php'));
@@ -33,9 +34,11 @@ class RouteServiceProvider extends ServiceProvider
 
     /**
      * Configure the rate limiters for the application.
+     * Note: Rate limiters are now configured in AppServiceProvider
+     * to ensure they are registered early in the application lifecycle.
      */
     protected function configureRateLimiting(): void
     {
-        // TODO: Configure rate limiting using RateLimiter::for(...)
+        // Rate limiters are configured in AppServiceProvider::boot()
     }
 }

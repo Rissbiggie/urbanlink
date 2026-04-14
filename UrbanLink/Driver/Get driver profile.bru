@@ -1,15 +1,20 @@
 meta {
   name: Get driver profile
   type: http
-  seq: 2
+  seq: 1
 }
 
 get {
   url: http://localhost:8000/api/driver/profile
   body: none
-  auth: inherit
+  auth: bearer
+}
+
+auth:bearer {
+  token: 1|xmbl0hLwpNM5fL7uSad8b7qTgRjHhgoERae6rjLl2e5b4146
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

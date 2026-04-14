@@ -1,15 +1,20 @@
 meta {
   name: Get driver vehicles
   type: http
-  seq: 13
+  seq: 11
 }
 
 get {
   url: http://localhost:8000/api/driver/vehicles
   body: none
-  auth: inherit
+  auth: bearer
+}
+
+auth:bearer {
+  token: 6|1TC7fzlr9SmQNvrjBGjgda0ND9LVa8yTaFuHXicw3812bab1
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

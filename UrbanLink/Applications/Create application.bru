@@ -6,10 +6,21 @@ meta {
 
 post {
   url: http://localhost:8000/api/applications
-  body: none
-  auth: inherit
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: 5|q2eXvYDgNgo7psbVLv7r5625YT9iQ0Re9s89TBch7dc224d9
+}
+
+body:json {
+  {
+   "government_service_id":"1" 
+  }
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

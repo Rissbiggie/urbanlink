@@ -15,6 +15,8 @@ class Ride extends Model
         'driver_profile_id',
         'status',
         'pickup_lat',
+        'payment_status',  // Tracks: unpaid, pending, paid
+        'completed_at',
         'pickup_lng',
         'pickup_address',
         'dropoff_lat',
@@ -41,17 +43,26 @@ class Ride extends Model
     ];
 
     public function passenger()
-    {
-        return $this->belongsTo(User::class, 'passenger_id');
-    }
+{
+    // Links to the 'users' table via 'passenger_id'
+    return $this->belongsTo(User::class, 'passenger_id');
+}
 
-    public function driverProfile()
-    {
-        return $this->belongsTo(DriverProfile::class);
-    }
-
+   public function driverProfile()
+{
+    // Links to the 'driver_profiles' table via 'driver_profile_id'
+    return $this->belongsTo(DriverProfile::class, 'driver_profile_id');
+}
     public function payment()
     {
         return $this->morphOne(Payment::class, 'payable');
     }
+    /**
+ * Check if the ride is physically done and financially cleared.
+ */
+public function isFullyCleared(): bool
+{
+    return $this->status === 'completed' && $this->payment_status === 'paid';
 }
+}
+

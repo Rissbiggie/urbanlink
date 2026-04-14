@@ -1,19 +1,20 @@
 meta {
   name: update driver profile
   type: http
-  seq: 3
+  seq: 2
 }
 
 put {
   url: http://localhost:8000/api/driver/profile
-  body: none
+  body: json
   auth: bearer
 }
 
 auth:bearer {
-  token: 6|lxpMd4V75Aw49SwwaGMr6IPTUvJLOo4l6rXpEWem25590bf8
+  token: 11|e3jddBH6iBJ9mNzCa7TcmBdhcTE0JNah8dFIfWZj8bb324fb
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

@@ -6,14 +6,29 @@ meta {
 
 post {
   url: http://localhost:8000/api/rides/quote
-  body: none
+  body: json
   auth: bearer
 }
 
 auth:bearer {
-  token: 5|GinLGQzO8BMhKTuwfM0VCfJmNKE2up15QpDXaQrFeae64458
+  token: 34|f6BbRDNgLIi8QjpFcIZ7k2ApdycqIDDYswdNWnJgecc573b1
+}
+
+body:json {
+  {
+        "distance_km": 
+        "1"
+      ,
+      "duration_minutes": 
+        "55"
+      ,
+      "vehicle_type": 
+        "xl"
+      
+  }
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

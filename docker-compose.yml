@@ -22,7 +22,7 @@ services:
       - SESSION_DRIVER=redis
       - QUEUE_CONNECTION=redis
       - REDIS_HOST=redis
-      - VITE_API_URL=http://localhost:8000/api
+      - VITE_API_URL=/api
     ports:
       - "8000:80" # Host 8000 -> Container Nginx 80
     volumes:
@@ -45,6 +45,24 @@ services:
       - redis-data:/data
     networks:
       - urbanlink-network
+
+ 
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: urbanlink-ngrok
+    restart: unless-stopped
+    ports:
+      - "4040:4040" # <--- ADD THIS LINE
+    command: ["start", "--all", "--config", "/etc/ngrok/ngrok.yml"]
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    volumes:
+      - ./docker/ngrok/ngrok.yml:/etc/ngrok/ngrok.yml:ro
+    networks:
+      - urbanlink-network
+    depends_on:
+      - app
 
 networks:
   urbanlink-network:

@@ -20,25 +20,35 @@ class DatabaseSeeder extends Seeder
             'name' => 'Admin User',
             'email' => 'admin@example.com',
             'role' => 'admin',
+            'password' => bcrypt('password'), // Default password for testing
         ]);
 
         User::factory()->create([
             'name' => 'Driver User',
             'email' => 'driver@example.com',
             'role' => 'driver',
+            'password' => bcrypt('password'), // Default password for testing
         ]);
 
         User::factory()->create([
             'name' => 'Officer User',
             'email' => 'officer@example.com',
             'role' => 'government_officer',
+            'password' => bcrypt('password'), // Default password for testing
+        ]);
+
+         User::factory()->create([
+            'name' => 'Citizen User',
+            'email' => 'citizen@example.com',
+            'role' => 'citizen',
+            'password' => bcrypt('password'), // Default password for testing
         ]);
 
         // Seed government service categories and services
         $taxCategory = \App\Models\ServiceCategory::create(['name' => 'Tax & Revenue', 'slug' => 'tax']);
         \App\Models\GovernmentService::create([
             'service_category_id' => $taxCategory->id,
-            'name' => 'KRA PIN Registration',
+            'name' => 'KRA PIN Registration',   
             'code' => 'KRA_PIN',
             'description' => 'Register for a KRA PIN to file taxes.',
             'required_documents' => ['national_id'],

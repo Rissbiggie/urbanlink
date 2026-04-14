@@ -1,15 +1,20 @@
 meta {
   name: applications
   type: http
-  seq: 3
+  seq: 5
 }
 
 get {
   url: http://localhost:8000/api/admin/applications
   body: none
-  auth: inherit
+  auth: bearer
+}
+
+auth:bearer {
+  token: 9|EEdoW7uTuLywdaC0FiaIrftmeRbttokWjbM3Rehwea8f4427
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

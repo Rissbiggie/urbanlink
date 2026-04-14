@@ -1,0 +1,35 @@
+meta {
+  name: Register a driver
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8000/api/driver/register
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: 4|VOHnkQGwkthCWYvezZcX4QyXd1o4jcVXWP8bgZMW1c8bda51
+}
+
+body:json {
+  {
+    "license_number": "DL-123456789",
+    "license_class": "BCE",
+    "license_expiry": "2029-12-31",
+    "vehicle": {
+      "make": "Toyota",
+      "model": "Fielder",
+      "plate_number": "KDL 123X",
+      "vehicle_type": "sedan",
+      "year": "2018"
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

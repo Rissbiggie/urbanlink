@@ -86,4 +86,5 @@ class User extends Authenticatable
     {
         return $this->hasMany(CitizenReport::class);
     }
+    
 }

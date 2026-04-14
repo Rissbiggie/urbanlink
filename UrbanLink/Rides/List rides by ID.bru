@@ -5,11 +5,16 @@ meta {
 }
 
 get {
-  url: http://localhost:8000/api/rides/{id}
+  url: http://localhost:8000/api/rides/2
   body: none
-  auth: inherit
+  auth: bearer
+}
+
+auth:bearer {
+  token: 2|IBBsjQAs28WL7nSeIzlvpN4w1IRUoboUoGz73m3t4d4010f7
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

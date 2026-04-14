@@ -35,13 +35,19 @@ return [
         ],
     ],
 
-    'mpesa' => [
-        'consumer_key' => env('MPESA_CONSUMER_KEY'),
-        'consumer_secret' => env('MPESA_CONSUMER_SECRET'),
-        'shortcode' => env('MPESA_SHORTCODE'),
-        'passkey' => env('MPESA_PASSKEY'),
-        'callback_url' => env('MPESA_CALLBACK_URL'),
-        'sandbox' => env('MPESA_SANDBOX', true),
+    'africastalking' => [
+        'username' => env('AFRICASTALKING_USERNAME'),
+        'api_key' => env('AFRICASTALKING_API_KEY'),
+        'sender_id' => env('AFRICASTALKING_SENDER_ID', 'UrbanLink'),
+    ],
+
+    'grok' => [
+        'api_key' => env('GROK_API_KEY'),
+        'base_url' => env('GROK_BASE_URL', 'https://api.x.ai/v1'),
+        'max_retries' => env('GROK_MAX_RETRIES', 3),
+        'timeout' => env('GROK_TIMEOUT', 30),
+        'cache_responses' => env('GROK_CACHE_RESPONSES', true),
+        'cache_ttl' => env('GROK_CACHE_TTL', 60), // minutes
     ],
 
     'rides' => [
@@ -73,5 +79,14 @@ return [
             'base_url' => env('SHA_API_BASE_URL'),
             'token' => env('SHA_API_TOKEN'),
         ],
+    ],
+    
+    'mpesa' => [
+    'sandbox'         => env('MPESA_ENVIRONMENT', 'sandbox'),
+    'consumer_key'    => env('MPESA_CONSUMER_KEY'),
+    'consumer_secret' => env('MPESA_CONSUMER_SECRET'),
+    'shortcode'       => env('MPESA_SHORTCODE'),
+    'passkey'         => env('MPESA_PASSKEY'),
+    'callback_url'    => env('MPESA_CALLBACK_URL'),
     ],
 ];

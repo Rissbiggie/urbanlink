@@ -23,7 +23,7 @@ class PaymentController extends Controller
             'amount' => 'required|numeric|min:0',
         ]);
 
-        $data['user_id'] = $request->user()->id;
+        $data['user_id'] =$request->user()->id;
 
         $payment = $this->service->initiateMpesa($data);
 

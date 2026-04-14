@@ -9,8 +9,15 @@ use Illuminate\Support\Facades\Cache;
 
 class ComplianceService
 {
-    public function getSnapshot(User $user): ComplianceSnapshot|null
+    /**
+     * Get the snapshot for a user, cached for 24 hours.
+     */
+    public function getSnapshot(?User $user): ?ComplianceSnapshot
     {
+        if (!$user) {
+            return null;
+        }
+
         $cacheKey = "compliance_snapshot:{$user->id}";
 
         return Cache::remember($cacheKey, 86400, function () use ($user) {
@@ -18,8 +25,14 @@ class ComplianceService
         });
     }
 
-    public function refresh(User $user): ComplianceSnapshot
+    /**
+     * Trigger a background sync and return the current (possibly stale) snapshot.
+     */
+    public function refresh(User $user): ?ComplianceSnapshot
     {
+        // Clear cache so the next call gets fresh data from DB
+        Cache::forget("compliance_snapshot:{$user->id}");
+        
         SyncComplianceSnapshot::dispatch($user);
 
         return $this->getSnapshot($user);

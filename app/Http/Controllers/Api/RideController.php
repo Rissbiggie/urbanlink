@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\RideService;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-
+use App\Models\Ride;
+use Illuminate\Support\Facades\DB;
 class RideController extends Controller
 {
-    public function __construct(protected RideService $rideService)
+    public function __construct(protected RideService $rideService, protected AuditService $auditService)
     {
     }
 
@@ -87,6 +89,12 @@ class RideController extends Controller
         $ride->status = 'cancelled';
         $ride->save();
 
+        // Audit log the cancellation
+        $this->auditService->logRideAction($request->user(), 'cancelled', $ride->id, [
+            'reason' => $request->input('reason'),
+            'previous_status' => $ride->getOriginal('status'),
+        ]);
+
         if ($ride->driver_profile_id) {
             \App\Models\Notification::create([
                 'user_id' => $ride->driver_profile->user_id,
@@ -99,20 +107,35 @@ class RideController extends Controller
 
         return response()->json(['message' => 'Ride cancelled']);
     }
+public function rate(Request $request, int $id): JsonResponse
+{
+    $data = $request->validate([
+        'rating' => 'required|integer|min:1|max:5',
+    ]);
 
-    public function rate(Request $request, int $id): JsonResponse
-    {
-        $data = $request->validate([
-            'rating' => 'required|integer|min:1|max:5',
-            'comment' => 'nullable|string',
+    $ride = $request->user()->rides()->findOrFail($id);
+    $this->authorize('rate', $ride);
+
+    $ride->driver_rating = $data['rating'];
+    $ride->save();
+
+    // Audit log the rating
+    $this->auditService->logRideAction($request->user(), 'rated', $ride->id, [
+        'rating' => $data['rating'],
+        'driver_id' => $ride->driver_profile_id,
+    ]);
+
+    // Update driver average rating
+    if ($ride->driver_profile_id) {
+        $average = Ride::where('driver_profile_id', $ride->driver_profile_id)
+            ->whereNotNull('driver_rating')
+            ->avg('driver_rating') ?? 0;
+
+        $ride->driverProfile->update([
+            'average_rating' => round($average, 2),
         ]);
-
-        $ride = $request->user()->rides()->where('status', 'completed')->findOrFail($id);
-        $this->authorize('rate', $ride);
-
-        $ride->passenger_rating = $data['rating'];
-        $ride->save();
-
-        return response()->json(['message' => 'Ride rated']);
     }
+
+    return response()->json($ride);
+}
 }

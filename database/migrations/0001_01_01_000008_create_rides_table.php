@@ -17,6 +17,8 @@ return new class extends Migration
             $table->foreignId('passenger_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('driver_profile_id')->nullable()->constrained('driver_profiles')->nullOnDelete();
             $table->enum('status', ['pending', 'accepted', 'in_progress', 'completed', 'cancelled'])->default('pending');
+            $table->enum('payment_status', ['unpaid', 'pending', 'paid', 'refunded'])->default('unpaid')->after('status');
+            $table->timestamp('completed_at')->nullable()->after('updated_at');
             $table->decimal('pickup_lat', 10, 7);
             $table->decimal('pickup_lng', 10, 7);
             $table->string('pickup_address');

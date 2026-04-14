@@ -7,9 +7,14 @@ meta {
 post {
   url: http://localhost:8000/api/auth/logout
   body: none
-  auth: inherit
+  auth: bearer
+}
+
+auth:bearer {
+  token: 25|Uhr8bKzzrjL1QnhZTvdKFsxIkjWIlkUHIc6Qlvqhec8ffa1b
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

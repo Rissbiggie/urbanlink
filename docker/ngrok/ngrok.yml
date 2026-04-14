@@ -1,0 +1,9 @@
+version: "2" # Ngrok config version
+region: us
+
+tunnels:
+  urbanlink-app: # Name of the tunnel
+    proto: http # Protocol to forward
+    addr: app:80 # Forward to the 'app' service's port 80
+    host_header: rewrite # This line is the only difference from the old version.
+    

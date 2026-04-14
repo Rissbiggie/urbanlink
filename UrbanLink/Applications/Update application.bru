@@ -5,11 +5,12 @@ meta {
 }
 
 put {
-  url: http://localhost:8000/api/applications/{id}
+  url: http://localhost:8000/api/applications/2
   body: none
   auth: inherit
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

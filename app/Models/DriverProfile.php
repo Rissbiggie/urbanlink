@@ -10,17 +10,19 @@ class DriverProfile extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
-        'license_number',
-        'license_class',
-        'license_expiry',
-        'status',
-        'is_available',
-        'current_lat',
-        'current_lng',
-        'average_rating',
-        'total_rides',
-    ];
+    'user_id',
+    'license_number',
+    'license_class',
+    'license_expiry',
+    'status',
+    'is_available',
+    'verified_at',
+    'rejection_reason',
+    'current_lat',
+    'current_lng',
+    'total_rides',
+    'average_rating',
+];
 
     protected $casts = [
         'license_expiry' => 'date',
@@ -35,13 +37,15 @@ class DriverProfile extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function vehicle()
-    {
-        return $this->hasOne(Vehicle::class);
-    }
-
     public function rides()
-    {
-        return $this->hasMany(Ride::class);
-    }
+{
+    // Ensure the foreign key in the rides table is 'driver_profile_id'
+    return $this->hasMany(Ride::class, 'driver_profile_id');
+}
+public function vehicle()
+{
+    // Ensure the foreign key in the vehicles table is 'driver_profile_id'
+    return $this->hasOne(\App\Models\Vehicle::class, 'driver_profile_id');
+}
+
 }
