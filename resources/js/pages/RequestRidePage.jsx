@@ -105,31 +105,49 @@ const RequestRidePage = () => {
     /**
      * Step 2: Confirm Ride Request
      */
-    const handleFinalRequest = async () => {
-        setLoading(true);
-        const toastId = toast.loading('Broadcasting signal to nearby drivers...');
+   const handleFinalRequest = async () => {
+    setLoading(true);
+    const toastId = toast.loading('Broadcasting signal to nearby drivers...');
 
-        try {
-            const payload = {
-                pickup_lat: formData.pickup_lat,
-                pickup_lng: formData.pickup_lng,
-                pickup_address: formData.pickup_address,
-                dropoff_lat: formData.dropoff_lat,
-                dropoff_lng: formData.dropoff_lng,
-                dropoff_address: formData.dropoff_address,
-                vehicle_type: formData.vehicle_type,
-                payment_method: formData.payment_method
-            };
+    try {
+        const payload = {
+            pickup_lat: formData.pickup_lat,
+            pickup_lng: formData.pickup_lng,
+            pickup_address: formData.pickup_address,
+            dropoff_lat: formData.dropoff_lat,
+            dropoff_lng: formData.dropoff_lng,
+            dropoff_address: formData.dropoff_address,
+            vehicle_type: formData.vehicle_type,
+            payment_method: formData.payment_method
+        };
 
-            const response = await rideAPI.request(payload);
+        const response = await rideAPI.request(payload);
+
+        /**
+         * FIX: Safely extract the ID. 
+         * Most Laravel/Node APIs wrap data in a 'data' key.
+         * We check: response.data.id OR response.data.data.id
+         */
+        const rideId = response.data?.id || response.data?.data?.id;
+
+        if (rideId) {
             toast.success('Signal Received', { id: toastId });
-            navigate(`/rides/${response.data.id}`);
-        } catch (err) {
-            toast.error('Dispatch transmission failed', { id: toastId });
-        } finally {
-            setLoading(false);
+            // Ensure this navigate string exactly matches your AppRouter path
+            navigate(`/rides/${rideId}`);
+        } else {
+            console.error("API Response structure mismatch:", response.data);
+            throw new Error("No ride ID found in response");
         }
-    };
+
+    } catch (err) {
+        console.error("Dispatch transmission error:", err);
+        // Display the specific error message from the backend if available
+        const errorMsg = err.response?.data?.message || 'Dispatch transmission failed';
+        toast.error(errorMsg, { id: toastId });
+    } finally {
+        setLoading(false);
+    }
+};
 
     return (
         <div className="h-screen w-full relative bg-slate-900 overflow-hidden font-sans">

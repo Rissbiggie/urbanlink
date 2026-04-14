@@ -12,88 +12,106 @@ import CitizenDashboard from './pages/CitizenDashboard';
 import DriverDashboard from './pages/DriverDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import OfficerDashboard from './pages/OfficerDashboard';
+import EarningsPage from './pages/EarningsPage';
+import VehicleProfilePage from './pages/VehicleProfilePage';
 import RequestRidePage from './pages/RequestRidePage';
 import RidesPage from './pages/RidesPage';
-import RideDetailPage from './pages/RideDetailPage';
-import ActiveTripPage from './pages/ActiveTripPage';
-import ApplicationsPage from './pages/ApplicationsPage';
-import ApplicationDetailPage from './pages/ApplicationDetailPage';
-import NewApplicationPage from './pages/NewApplicationPage';
-import CompliancePage from './pages/CompliancePage';
 import PaymentsPage from './pages/PaymentsPage';
-import ProfilePage from './pages/ProfilePage';
-import DriverProfilePage from './pages/DriverProfilePage';
+import ApplicationsPage from './pages/ApplicationsPage';
 import UsersManagementPage from './pages/UsersManagementPage';
 import NotFoundPage from './pages/NotFoundPage';
+import RideDetailPage from './pages/RideDetailPage';
 
 const ProtectedRoute = ({ children, requiredRole }) => {
     const { user, loading } = useAuth();
-
     if (loading) return <LoadingPulse />;
     if (!user) return <Navigate to="/login" replace />;
-
+    
     if (requiredRole) {
         const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-        const userRole = user.role?.toLowerCase();
-        if (!roles.map(r => r.toLowerCase()).includes(userRole)) {
-            return <Navigate to="/" replace />;
-        }
+        if (!roles.includes(user.role)) return <Navigate to="/" replace />;
     }
-
+    
     return <MainLayout>{children}</MainLayout>;
 };
 
-const DashboardResolver = () => {
-    const { user, loading } = useAuth();
-    
-    if (loading) return <LoadingPulse />;
-    if (!user) return <Navigate to="/login" replace />;
-
-    const role = user.role?.toLowerCase();
-    console.log("UrbanLink Resolver - Active Role:", role);
-
-    switch (role) {
-        case 'admin': return <AdminDashboard />;
-        case 'driver': return <DriverDashboard />;
-        case 'government_officer':
-        case 'officer': return <OfficerDashboard />;
-        default: return <CitizenDashboard />;
-    }
-};
-
 const AppRouter = () => {
-    const { user, loading } = useAuth();
-
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/login" element={!loading && user ? <Navigate to="/" replace /> : <LoginPage />} />
-                <Route path="/register" element={!loading && user ? <Navigate to="/" replace /> : <RegisterPage />} />
+                {/* Auth */}
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
 
-                <Route path="/" element={<ProtectedRoute><DashboardResolver /></ProtectedRoute>} />
+                {/* Main Switcher (Root Dashboard) */}
+                <Route path="/" element={
+                    <ProtectedRoute>
+                        <DashboardSwitcher />
+                    </ProtectedRoute>
+                } />
 
-                {/* Transit */}
-                <Route path="/rides" element={<ProtectedRoute requiredRole={['citizen', 'driver', 'admin']}><RidesPage /></ProtectedRoute>} />
-                <Route path="/rides/request" element={<ProtectedRoute requiredRole="citizen"><RequestRidePage /></ProtectedRoute>} />
-                <Route path="/rides/:id" element={<ProtectedRoute><RideDetailPage /></ProtectedRoute>} />
-                <Route path="/rides/:id/active" element={<ProtectedRoute requiredRole={['citizen', 'driver']}><ActiveTripPage /></ProtectedRoute>} />
+              <Route path="/rides/:id" element={
+                    <ProtectedRoute>
+                        <RideDetailPage />
+                    </ProtectedRoute>
+                } />
+                
+                {/* Driver Specific Sub-Routes */}
+                <Route path="/driver/earnings" element={
+                    <ProtectedRoute requiredRole="driver">
+                        <EarningsPage />
+                    </ProtectedRoute>
+                } />
+                <Route path="/driver/vehicle" element={
+                    <ProtectedRoute requiredRole="driver">
+                        <VehicleProfilePage />
+                    </ProtectedRoute>
+                } />
 
-                {/* Governance */}
-                <Route path="/applications" element={<ProtectedRoute requiredRole={['citizen', 'government_officer', 'admin']}><ApplicationsPage /></ProtectedRoute>} />
-                <Route path="/applications/new" element={<ProtectedRoute requiredRole="citizen"><NewApplicationPage /></ProtectedRoute>} />
-                <Route path="/applications/:id" element={<ProtectedRoute><ApplicationDetailPage /></ProtectedRoute>} />
-                <Route path="/compliance" element={<ProtectedRoute requiredRole="citizen"><CompliancePage /></ProtectedRoute>} />
-                <Route path="/payments" element={<ProtectedRoute requiredRole="citizen"><PaymentsPage /></ProtectedRoute>} />
+                {/* Citizen & Shared Routes */}
+                <Route path="/rides/request" element={
+                    <ProtectedRoute requiredRole="citizen">
+                        <RequestRidePage />
+                    </ProtectedRoute>
+                } />
+                <Route path="/rides" element={
+                    <ProtectedRoute>
+                        <RidesPage />
+                    </ProtectedRoute>
+                } />
+                <Route path="/payments" element={
+                    <ProtectedRoute>
+                        <PaymentsPage />
+                    </ProtectedRoute>
+                } />
+                <Route path="/applications" element={
+                    <ProtectedRoute>
+                        <ApplicationsPage />
+                    </ProtectedRoute>
+                } />
 
-                {/* Account */}
-                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                <Route path="/driver/profile" element={<ProtectedRoute requiredRole="driver"><DriverProfilePage /></ProtectedRoute>} />
-                <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><UsersManagementPage /></ProtectedRoute>} />
+                {/* Admin Specific */}
+                <Route path="/admin/users" element={
+                    <ProtectedRoute requiredRole="admin">
+                        <UsersManagementPage />
+                    </ProtectedRoute>
+                } />
 
+                {/* Fallback */}
                 <Route path="*" element={<NotFoundPage />} />
             </Routes>
         </BrowserRouter>
     );
+};
+
+const DashboardSwitcher = () => {
+    const { user } = useAuth();
+    switch (user?.role) {
+        case 'admin': return <AdminDashboard />;
+        case 'driver': return <DriverDashboard />;
+        case 'government_officer': return <OfficerDashboard />;
+        default: return <CitizenDashboard />;
+    }
 };
 
 export default AppRouter;
