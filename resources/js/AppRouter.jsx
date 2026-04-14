@@ -17,10 +17,16 @@ import VehicleProfilePage from './pages/VehicleProfilePage';
 import RequestRidePage from './pages/RequestRidePage';
 import RidesPage from './pages/RidesPage';
 import PaymentsPage from './pages/PaymentsPage';
-import ApplicationsPage from './pages/ApplicationsPage';
+import ApplicationsPage from './pages/ApplicationsPage'; // Points to history/list
 import UsersManagementPage from './pages/UsersManagementPage';
 import NotFoundPage from './pages/NotFoundPage';
 import RideDetailPage from './pages/RideDetailPage';
+
+// --- ADDED IMPORTS FOR SERVICE FILING FLOW ---
+import ServiceListingPage from './pages/ServiceListingPage';
+import ApplicationProcessPage from './pages/ApplicationProcessPage';
+import ApplicationDetailPage from './pages/ApplicationDetailPage';
+// ---------------------------------------------
 
 const ProtectedRoute = ({ children, requiredRole }) => {
     const { user, loading } = useAuth();
@@ -55,7 +61,7 @@ const AppRouter = () => {
                         <RideDetailPage />
                     </ProtectedRoute>
                 } />
-                
+
                 {/* Driver Specific Sub-Routes */}
                 <Route path="/driver/earnings" element={
                     <ProtectedRoute requiredRole="driver">
@@ -84,11 +90,36 @@ const AppRouter = () => {
                         <PaymentsPage />
                     </ProtectedRoute>
                 } />
+
+                {/* --- UPDATED APPLICATIONS & SERVICES SECTION --- */}
+                {/* 1. View Service Catalog */}
+                <Route path="/services" element={
+                    <ProtectedRoute requiredRole="citizen">
+                        <ServiceListingPage />
+                    </ProtectedRoute>
+                } />
+
+                {/* 2. Process/Submit New Application */}
+                <Route path="/services/apply/:serviceId" element={
+                    <ProtectedRoute requiredRole="citizen">
+                        <ApplicationProcessPage />
+                    </ProtectedRoute>
+                } />
+
+                {/* 3. View Application History/List */}
                 <Route path="/applications" element={
                     <ProtectedRoute>
                         <ApplicationsPage />
                     </ProtectedRoute>
                 } />
+
+                {/* 4. View Specific Application Detail */}
+                <Route path="/applications/:id" element={
+                    <ProtectedRoute>
+                        <ApplicationDetailPage />
+                    </ProtectedRoute>
+                } />
+                {/* ----------------------------------------------- */}
 
                 {/* Admin Specific */}
                 <Route path="/admin/users" element={
