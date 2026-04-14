@@ -77,7 +77,7 @@ export const rideAPI = {
  */
 export const applicationAPI = {
     list: (params) => apiClient.get('/applications', { params }),
-    getServices: () => apiClient.get('/government/services'),
+    getServices: () => apiClient.get('/services'),
     submit: (payload) => apiClient.post('/applications', payload),
     getDetails: (id) => apiClient.get(`/applications/${id}`),
     updateStatus: (id, data) => apiClient.put(`/applications/${id}`, data), // For Officers
