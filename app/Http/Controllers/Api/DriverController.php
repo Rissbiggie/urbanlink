@@ -52,6 +52,23 @@ class DriverController extends Controller
         ]);
     }
 
+ public function index(Request $request): JsonResponse
+{
+    // 1. We use whereHas to filter based on the 'vehicles' table
+    $drivers = DriverProfile::with(['user:id,name', 'vehicle'])
+        ->where('status', 'approved') // Only show verified drivers
+        ->where('is_available', true) // Only show those currently online
+        ->when($request->filled('vehicle_type'), function ($query) use ($request) {
+            // Filter by vehicle type in the RELATED table
+            $query->whereHas('vehicle', function ($q) use ($request) {
+                $q->where('vehicle_type', $request->vehicle_type);
+            });
+        })
+        ->latest()
+        ->get();
+
+    return response()->json($drivers);
+}
     /**
      * Dedicated Reject Function
      * Reverts the user back to 'citizen' and records why they were rejected.
@@ -141,6 +158,32 @@ class DriverController extends Controller
 
         return response()->json(['status' => 'location updated']);
     }
+
+
+   
+
+    // nside RideController.php or a dedicated DriverController
+
+public function driverRides(Request $request): JsonResponse
+{
+    $user = $request->user();
+
+    // Ensure the user has a driver profile
+    if (!$user->driverProfile) {
+        return response()->json(['message' => 'Not a registered driver'], 403);
+    }
+
+    // Query rides matching the driver_profile_id
+    $rides = Ride::where('driver_profile_id', $user->driverProfile->id)
+        ->when($request->filled('status'), function($q) use ($request) {
+            $q->where('status', $request->status);
+        })
+        ->with('passenger') // Eager load passenger info for the dashboard
+        ->latest()
+        ->paginate(15);
+
+    return response()->json($rides);
+}
 
     /**
      * Ride Lifecycle: Accept

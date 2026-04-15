@@ -33,24 +33,26 @@ class RideController extends Controller
     }
 
     public function store(Request $request): JsonResponse
-    {
-        $data = $request->validate([
-            'pickup_lat' => 'required|numeric',
-            'pickup_lng' => 'required|numeric',
-            'pickup_address' => 'required|string',
-            'dropoff_lat' => 'required|numeric',
-            'dropoff_lng' => 'required|numeric',
-            'dropoff_address' => 'required|string',
-            'vehicle_type' => 'required|string|in:economy,comfort,xl',
-            'payment_method' => 'required|string|in:mpesa,cash',
-            'distance_km' => 'nullable|numeric|min:0',
-            'duration_minutes' => 'nullable|integer|min:0',
-        ]);
+{
+    $data = $request->validate([
+        'pickup_lat' => 'required|numeric',
+        'pickup_lng' => 'required|numeric',
+        'pickup_address' => 'required|string',
+        'dropoff_lat' => 'required|numeric',
+        'dropoff_lng' => 'required|numeric',
+        'dropoff_address' => 'required|string',
+        'vehicle_type' => 'required|string|in:economy,comfort,xl',
+        'payment_method' => 'required|string|in:mpesa,cash',
+        'distance_km' => 'nullable|numeric|min:0',
+        'duration_minutes' => 'nullable|integer|min:0',
+        // ADD THIS:
+        'driver_profile_id' => 'nullable|exists:driver_profiles,id',
+    ]);
 
-        $ride = $this->rideService->createRide($request->user(), $data);
+    $ride = $this->rideService->createRide($request->user(), $data);
 
-        return response()->json($ride);
-    }
+    return response()->json($ride);
+}
 
     public function index(Request $request): JsonResponse
     {

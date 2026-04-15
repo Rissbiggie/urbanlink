@@ -70,13 +70,15 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/driver/toggle-availability', [DriverController::class, 'toggleAvailability'])->middleware('auth:sanctum,role:driver');
     Route::post('/driver/location', [DriverController::class, 'updateLocation'])->middleware('auth:sanctum,role:driver');
     Route::get('/driver/map', [DriverController::class, 'mapData'])->middleware('auth:sanctum,role:driver');
-    Route::get('/driver/rides', [DriverController::class, 'rides'])->middleware('auth:sanctum,role:driver');
+   // Route::get('/driver/rides', [DriverController::class, 'rides'])->middleware('auth:sanctum,role:driver');
+    Route::get('driver/rides', [DriverController::class, 'driverRides'])->middleware('auth:sanctum,role:driver');
     Route::post('/driver/rides/{id}/accept', [DriverController::class, 'acceptRide'])->middleware('auth:sanctum,role:driver');
     Route::post('/driver/rides/{id}/start', [DriverController::class, 'startRide'])->middleware('auth:sanctum,role:driver');
     Route::post('/driver/rides/{id}/complete', [DriverController::class, 'completeRide'])->middleware('auth:sanctum,role:driver');
     Route::get('/driver/earnings', [DriverController::class, 'earnings'])->middleware('auth:sanctum,role:driver');
     Route::get('/driver/payouts', [DriverController::class, 'payouts'])->middleware('auth:sanctum,role:driver');
     Route::get('/driver/vehicles', [DriverController::class, 'vehicles'])->middleware('auth:sanctum,role:driver');
+    Route::get('/driver/available-drivers', [DriverController::class, 'index'])->middleware('auth:sanctum');
 
     // Payments
     Route::middleware(['throttle:payments'])->group(function () {

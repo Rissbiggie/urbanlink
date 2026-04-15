@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('ride_reference')->unique();
             $table->foreignId('passenger_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('driver_profile_id')->nullable()->constrained('driver_profiles')->nullOnDelete();
+           // We link to driver_profiles, not just users, to access specific driver data
+            $table->foreignId('driver_profile_id')->nullable()->constrained('driver_profiles')->onDelete('set null');
             $table->enum('status', ['pending', 'accepted', 'in_progress', 'completed', 'cancelled'])->default('pending');
             $table->enum('payment_status', ['unpaid', 'pending', 'paid', 'refunded'])->default('unpaid')->after('status');
             $table->timestamp('completed_at')->nullable()->after('updated_at');

@@ -50,12 +50,14 @@ export const driverAPI = {
     getRides: (params) => apiClient.get('/driver/rides', { params }),
     getEarnings: () => apiClient.get('/driver/earnings'),
     getPayouts: () => apiClient.get('/driver/payouts'),
-    
+    getVehicles: () => apiClient.get('/driver/vehicles'),
+    GetAvailableDrivers: () => apiClient.get('/driver/available-drivers'),
     // Ride Lifecycle
     acceptRide: (id) => apiClient.post(`/driver/rides/${id}/accept`),
     startRide: (id) => apiClient.post(`/driver/rides/${id}/start`),
     completeRide: (id) => apiClient.post(`/driver/rides/${id}/complete`),
-};
+
+};  
 
 /**
  * 5. MOBILITY (CITIZEN RIDES)

@@ -8,39 +8,43 @@ use App\Models\User;
 
 class RideService
 {
-    public function createRide(User $passenger, array $data): Ride
-    {
-        $distanceKm = $data['distance_km'] ?? null;
-        $durationMinutes = $data['duration_minutes'] ?? null;
+   public function createRide(User $passenger, array $data): Ride
+{
+    $distanceKm = $data['distance_km'] ?? null;
+    $durationMinutes = $data['duration_minutes'] ?? null;
 
-        $estimatedFare = $this->calculateFare(
-            $distanceKm ?? 0,
-            $durationMinutes ?? 0,
-            $data['vehicle_type']
-        );
+    $estimatedFare = $this->calculateFare(
+        $distanceKm ?? 0,
+        $durationMinutes ?? 0,
+        $data['vehicle_type']
+    );
 
-        $ride = Ride::create([
-            'ride_reference' => $this->generateReference(),
-            'passenger_id' => $passenger->id,
-            'status' => 'pending',
-            'pickup_lat' => $data['pickup_lat'],
-            'pickup_lng' => $data['pickup_lng'],
-            'pickup_address' => $data['pickup_address'],
-            'dropoff_lat' => $data['dropoff_lat'],
-            'dropoff_lng' => $data['dropoff_lng'],
-            'dropoff_address' => $data['dropoff_address'],
-            'vehicle_type' => $data['vehicle_type'],
-            'payment_method' => $data['payment_method'],
-            'estimated_fare' => $estimatedFare,
-            'distance_km' => $distanceKm,
-            'duration_minutes' => $durationMinutes,
-        ]);
+    $ride = Ride::create([
+        'ride_reference' => $this->generateReference(),
+        'passenger_id' => $passenger->id,
+        // ADD THIS LINE:
+        'driver_profile_id' => $data['driver_profile_id'] ?? null, 
+        'status' => isset($data['driver_profile_id']) ? 'accepted' : 'pending',
+        'pickup_lat' => $data['pickup_lat'],
+        'pickup_lng' => $data['pickup_lng'],
+        'pickup_address' => $data['pickup_address'],
+        'dropoff_lat' => $data['dropoff_lat'],
+        'dropoff_lng' => $data['dropoff_lng'],
+        'dropoff_address' => $data['dropoff_address'],
+        'vehicle_type' => $data['vehicle_type'],
+        'payment_method' => $data['payment_method'],
+        'estimated_fare' => $estimatedFare,
+        'distance_km' => $distanceKm,
+        'duration_minutes' => $durationMinutes,
+    ]);
 
+    // Only dispatch search job if no driver is pre-assigned
+    if (!$ride->driver_profile_id) {
         FindDriverForRide::dispatch($ride);
-
-        return $ride;
     }
 
+    return $ride;
+}
     public function calculateFare(float $distanceKm, int $durationMin, string $vehicleType): float
     {
         $rates = [

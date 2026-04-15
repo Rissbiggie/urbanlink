@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
-import { rideAPI } from '../api';
-import { Navigation, ChevronRight, Car, MapPin, CreditCard } from 'lucide-react';
+import { rideAPI, driverAPI } from '../api'; // Added driverAPI import
+import { Navigation, ChevronRight, Car, MapPin, CreditCard, User, CheckCircle2, AlertCircle } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -20,6 +20,11 @@ const RequestRidePage = () => {
     const [viewMode, setViewMode] = useState('pickup'); // 'pickup' | 'dropoff' | 'confirm'
     const [loading, setLoading] = useState(false);
     const [quote, setQuote] = useState(null);
+    
+    // NEW STATES FOR DRIVER SELECTION
+    const [drivers, setDrivers] = useState([]);
+    const [selectedDriverId, setSelectedDriverId] = useState(null);
+    const [fetchingDrivers, setFetchingDrivers] = useState(false);
 
     const [formData, setFormData] = useState({
         pickup_lat: -1.286389,
@@ -93,6 +98,8 @@ const RequestRidePage = () => {
                 setQuote(response.data); 
                 setViewMode('confirm');
                 toast.success('Route Optimized', { id: toastId });
+                // Trigger driver fetch once quote is received
+                fetchAvailableDrivers();
             }
         } catch (err) {
             console.error("API Error:", err.response?.data);
@@ -103,11 +110,35 @@ const RequestRidePage = () => {
     };
 
     /**
+     * NEW: Fetch Drivers based on vehicle type
+     */
+    const fetchAvailableDrivers = async () => {
+        setFetchingDrivers(true);
+        try {
+            const response = await driverAPI.GetAvailableDrivers({ 
+                vehicle_type: formData.vehicle_type 
+            });
+            setDrivers(response.data || []);
+        } catch (err) {
+            console.error("Driver Fetch Error:", err);
+            toast.error("Error loading nearby drivers");
+        } finally {
+            setFetchingDrivers(false);
+        }
+    };
+
+    /**
      * Step 2: Confirm Ride Request
      */
    const handleFinalRequest = async () => {
+    // REQUIREMENT CHECK: Must have a driver selected
+    if (!selectedDriverId) {
+        toast.error("Please select a driver to proceed");
+        return;
+    }
+
     setLoading(true);
-    const toastId = toast.loading('Broadcasting signal to nearby drivers...');
+    const toastId = toast.loading('Broadcasting signal to selected driver...');
 
     try {
         const payload = {
@@ -118,7 +149,8 @@ const RequestRidePage = () => {
             dropoff_lng: formData.dropoff_lng,
             dropoff_address: formData.dropoff_address,
             vehicle_type: formData.vehicle_type,
-            payment_method: formData.payment_method
+            payment_method: formData.payment_method,
+            driver_profile_id: selectedDriverId // ADDED DRIVER MAPPING
         };
 
         const response = await rideAPI.request(payload);
@@ -227,7 +259,7 @@ const RequestRidePage = () => {
                             </>
                         ) : (
                             /* CONFIRMATION UI */
-                            <div className="space-y-8 animate-in slide-in-from-bottom-8">
+                            <div className="space-y-8 animate-in slide-in-from-bottom-8 max-h-[70vh] overflow-y-auto no-scrollbar">
                                 <div className="flex justify-between items-end border-b border-slate-100 pb-6">
                                     <div>
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estimated Fare</p>
@@ -236,14 +268,54 @@ const RequestRidePage = () => {
                                             {quote?.fare}
                                         </h2>
                                     </div>
-                                    <button onClick={() => setViewMode('pickup')} className="text-[10px] font-black text-indigo-600 underline underline-offset-4">RESET</button>
+                                    <button onClick={() => { setViewMode('pickup'); setSelectedDriverId(null); }} className="text-[10px] font-black text-indigo-600 underline underline-offset-4">RESET</button>
+                                </div>
+
+                                {/* DRIVER SELECTION AREA */}
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Select Your Pilot</p>
+                                    <div className="space-y-3">
+                                        {fetchingDrivers ? (
+                                            <div className="text-center py-4 animate-pulse text-xs font-black uppercase text-slate-400 tracking-widest">Scanning Registry...</div>
+                                        ) : drivers.length > 0 ? (
+                                            drivers.map(driver => (
+                                                <div 
+                                                    key={driver.id}
+                                                    onClick={() => setSelectedDriverId(driver.id)}
+                                                    className={`p-4 rounded-[1.8rem] border-2 cursor-pointer transition-all flex items-center justify-between ${selectedDriverId === driver.id ? 'border-indigo-600 bg-indigo-50 shadow-md' : 'border-slate-50 bg-white'}`}
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
+                                                            <User size={20} />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{driver.user?.name}</p>
+                                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                                                {driver.vehicle?.make} • {driver.vehicle?.plate_number}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    {selectedDriverId === driver.id && <CheckCircle2 className="text-indigo-600" size={20} />}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="p-4 rounded-[1.8rem] bg-amber-50 border border-amber-100 flex items-center gap-3">
+                                                <AlertCircle className="text-amber-500" size={16} />
+                                                <p className="text-[10px] font-bold text-amber-700 uppercase">No pilots available in this sector</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-3 gap-4">
                                     {['economy', 'comfort', 'xl'].map((tier) => (
                                         <button 
                                             key={tier}
-                                            onClick={() => setFormData({...formData, vehicle_type: tier})}
+                                            onClick={() => {
+                                                setFormData({...formData, vehicle_type: tier});
+                                                setSelectedDriverId(null);
+                                                fetchAvailableDrivers();
+                                            }}
                                             className={`p-5 rounded-[2rem] border-2 flex flex-col items-center gap-2 transition-all ${formData.vehicle_type === tier ? 'border-indigo-600 bg-indigo-50 shadow-inner' : 'border-slate-50 grayscale hover:grayscale-0'}`}
                                         >
                                             <span className="text-2xl">{tier === 'economy' ? '🚲' : tier === 'comfort' ? '🚗' : '🚐'}</span>
@@ -254,10 +326,10 @@ const RequestRidePage = () => {
 
                                 <button 
                                     onClick={handleFinalRequest}
-                                    disabled={loading}
-                                    className="w-full bg-indigo-600 text-white py-6 rounded-[2.2rem] font-black text-[11px] uppercase tracking-[0.3em] shadow-2xl shadow-indigo-200 active:scale-95 transition-all"
+                                    disabled={loading || !selectedDriverId}
+                                    className={`w-full py-6 rounded-[2.2rem] font-black text-[11px] uppercase tracking-[0.3em] shadow-2xl transition-all active:scale-95 ${!selectedDriverId ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-indigo-600 text-white shadow-indigo-200'}`}
                                 >
-                                    {loading ? 'Transmitting...' : 'Confirm Dispatch'}
+                                    {loading ? 'Transmitting...' : !selectedDriverId ? 'Select Pilot' : 'Confirm Dispatch'}
                                 </button>
                             </div>
                         )}
