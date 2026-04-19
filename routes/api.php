@@ -33,7 +33,7 @@ Route::post('/auth/change-password', [AuthController::class, 'changePassword'])-
 // Public services
 Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/services/{code}', [ServiceController::class, 'show']);
-
+Route::post('/services', [ServiceController::class,'store']);
 // Authenticated routes
 Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Compliance
@@ -87,6 +87,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/payments', [PaymentController::class, 'index']);
     Route::get('/payments/{id}', [PaymentController::class, 'show']);
     Route::get('/payments/{id}/status', [PaymentController::class, 'status']);
+    Route::get('/payments/attributes', [PaymentController::class, 'getPayableTypes']);
 
     // Grok AI Services
     Route::prefix('grok')->group(function () {

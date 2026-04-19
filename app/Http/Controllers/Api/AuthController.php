@@ -22,7 +22,7 @@ class AuthController extends Controller
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-            'role'     => 'required|in:citizen,driver',
+            'role'     => 'required|in:citizen,driver,admin,officer',
             
             // Conditional Validation: Required ONLY if role is driver
             'license_number' => 'required_if:role,driver|nullable|string|unique:driver_profiles,license_number',

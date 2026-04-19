@@ -5,9 +5,13 @@ meta {
 }
 
 get {
-  url: http://localhost:8000/api/payments/{id}/status
+  url: http://localhost:8000/api/payments/24/status
   body: none
-  auth: inherit
+  auth: bearer
+}
+
+auth:bearer {
+  token: 22|F3HlRuqmyIniVe2Yo2BiksvPjJ9a3I1sKZ31snJpf10b4ab5
 }
 
 settings {

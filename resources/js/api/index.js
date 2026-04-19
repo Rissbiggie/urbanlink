@@ -80,16 +80,26 @@ export const rideAPI = {
 export const applicationAPI = {
     list: (params) => apiClient.get('/applications', { params }),
     getServices: () => apiClient.get('/services'),
-    submit: (payload) => apiClient.post('/applications', payload),
-    getDetails: (id) => apiClient.get(`/applications/${id}`),
-    updateStatus: (id, data) => apiClient.put(`/applications/${id}`, data), // For Officers
-};
+    
+    // UPDATED: Accepting FormData for binary document support
+    submit: (formData) => apiClient.post('/applications', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        }
+    }),
 
+    // This is for fetching the SERVICE requirements (needed for the upload slots)
+    // Assuming your backend route for this is /api/services/{id}
+    getServiceDetails: (id) => apiClient.get(`/services/${id}`),
+
+    getDetails: (id) => apiClient.get(`/applications/${id}`),
+    updateStatus: (id, data) => apiClient.put(`/applications/${id}`, data),
+};
 /**
  * 7. PAYMENTS (MPESA)
  */
 export const paymentAPI = {
-    initiateStkPush: (data) => apiClient.post('/payments/mpesa/stk-push', data),
+    initiateStkPush: (data) => apiClient.post('payments/initiate', data),
     checkStatus: (checkoutRequestId) => apiClient.get(`/payments/mpesa/status/${checkoutRequestId}`),
     getHistory: () => apiClient.get('/payments'),
 };

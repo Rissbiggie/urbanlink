@@ -1,0 +1,35 @@
+meta {
+  name: create gvt service
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8000/api/services
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: 2|JqF6IrkfvrEfWnZVz7tvdB56yiCc0CQnyrNcNoWn473ed2c1
+}
+
+body:json {
+  {
+    "name": "NSTA",
+    "code": "DBP-2028",
+    "description": "Registration for small and medium enterprises within the city limits.",
+    "processing_time": "24 Hours",
+    "required_documents": [
+      "Valid ID Copy",
+      "KRA PIN Certificate",
+      "Physical Address Proof"
+    ],
+    "is_active": true
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

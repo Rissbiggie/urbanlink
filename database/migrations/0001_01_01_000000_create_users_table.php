@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->string('national_id')->nullable();
             $table->string('kra_pin')->nullable();
-            $table->enum('role', ['citizen', 'driver', 'government_officer', 'admin'])->default('citizen');
+            $table->enum('role', ['citizen', 'driver', 'officer', 'admin'])->default('citizen');
             $table->boolean('is_verified')->default(false);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');

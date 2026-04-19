@@ -7,6 +7,11 @@ use App\Services\PaymentService;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use App\Models\Ride;
+use App\Models\GovernmentService;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Str;
+
 
 class PaymentController extends Controller
 {
@@ -14,22 +19,27 @@ class PaymentController extends Controller
     {
     }
 
-    public function initiate(Request $request): JsonResponse
-    {
-        $data = $request->validate([
-            'payable_type' => 'required|string|in:ride,application',
-            'payable_id' => 'required|integer',
-            'phone' => 'required|string',
-            'amount' => 'required|numeric|min:0',
-        ]);
+  public function initiate(Request $request): JsonResponse
+{
+    // 1. Determine the table name dynamically for validation
+    $table = $request->payable_type === 'ride' ? 'rides' : 'applications';
 
-        $data['user_id'] =$request->user()->id;
+    $data = $request->validate([
+        'payable_type' => 'required|string|in:ride,application',
+        // 2. Changed 'integer' to 'numeric' to handle string-numbers from React
+        // 3. Added 'exists' to verify the record is actually in the DB
+        'payable_id'   => "required|numeric|exists:{$table},id", 
+        'phone'        => 'required|string',
+        'amount'       => 'required|numeric|min:1',
+    ]);
 
-        $payment = $this->service->initiateMpesa($data);
+    $data['user_id'] = $request->user()->id;
 
-        return response()->json($payment);
-    }
+    // The service will now only run if the record was found
+    $payment = $this->service->initiateMpesa($data);
 
+    return response()->json($payment);
+}
     public function callback(Request $request): JsonResponse
     {
         $callbackData = $request->all();
@@ -63,19 +73,45 @@ class PaymentController extends Controller
         return response()->json($payment);
     }
 
-    public function status(Request $request, int $id): JsonResponse
-    {
-        $payment = $request->user()->payments()->findOrFail($id);
+ // Changed 'int $id' to '$id' to prevent the TypeError seen in your logs
+public function status(Request $request, $id): JsonResponse
+{
+    // Find the payment belonging to the user
+    $payment = $request->user()->payments()->findOrFail($id);
 
-        // If this is an MPesa payment, refresh its status from the API if possible.
-        if ($payment->payment_method === 'mpesa') {
-            try {
-                $this->service->queryMpesaStatus($payment);
-            } catch (\Throwable $e) {
-                logger()->warning('Failed to query Mpesa status', ['payment' => $payment->id, 'error' => $e->getMessage()]);
-            }
+    if ($payment->payment_method === 'mpesa') {
+        try {
+            $this->service->queryMpesaStatus($payment);
+        } catch (\Throwable $e) {
+            logger()->warning('Failed to query Mpesa status', [
+                'payment' => $payment->id, 
+                'error' => $e->getMessage()
+            ]);
         }
-
-        return response()->json(['status' => $this->service->getStatus($payment)]);
     }
+
+    return response()->json([
+        'status' => $this->service->getStatus($payment),
+        'result_desc' => $payment->result_desc // Added this field
+    ]);
+}
+
+public function getPayableTypes(): JsonResponse
+{
+    // Fetch the keys from the Morph Map defined in your ServiceProvider
+    $map = Relation::morphMap();
+
+    $types = collect($map)->map(function ($className, $alias) {
+        return [
+            'id' => $alias, // e.g., 'ride'
+            // Generates a pretty name from the class name (e.g., 'Ride' or 'Government Service')
+            'name' => Str::headline(class_basename($className)) 
+        ];
+    })->values();
+
+    return response()->json([
+        'status' => 'success',
+        'types' => $types
+    ]);
+}
 }

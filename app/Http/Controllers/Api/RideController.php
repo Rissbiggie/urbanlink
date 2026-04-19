@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\DriverProfile;
 use App\Services\RideService;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Models\Ride;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 class RideController extends Controller
 {
     public function __construct(protected RideService $rideService, protected AuditService $auditService)
@@ -53,31 +54,58 @@ class RideController extends Controller
 
     return response()->json($ride);
 }
+public function index(Request $request): JsonResponse
+{
+    // Eager load the driverProfile
+    $query = $request->user()->rides()->with(['driverProfile.user', 'driverProfile.vehicle']);
 
-    public function index(Request $request): JsonResponse
-    {
-        $query = $request->user()->rides();
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->query('status'));
-        }
-
-        if ($request->boolean('today')) {
-            $query->whereDate('created_at', today());
-        }
-
-        $rides = $query->latest()->paginate(15);
-
-        return response()->json($rides);
+    if ($request->filled('status')) {
+        $query->where('status', $request->query('status'));
     }
 
-    public function show(Request $request, int $id): JsonResponse
-    {
-        $ride = $request->user()->rides()->findOrFail($id);
+    if ($request->boolean('today')) {
+        $query->whereDate('created_at', today());
+    }
+
+    $rides = $query->latest()->paginate(15);
+
+    return response()->json($rides);
+}
+public function show(Request $request, int $id): JsonResponse
+{
+    try {
+        // 1. Scope the query to the user to prevent 500s from cross-user access
+        // 2. Eager load relationships to prevent "Property access on null" in the UI
+        $ride = $request->user()->rides()
+            ->with([
+                'driverProfile.user', 
+                'driverProfile.vehicle', 
+                'payment'
+            ])
+            ->find($id);
+
+        // Handle case where ride doesn't exist for this user (404 instead of 500)
+        if (!$ride) {
+            return response()->json([
+                'message' => 'Ride manifest not found in the registry.'
+            ], 404);
+        }
+
+        // 3. Authorization check
+        // Ensure your RidePolicy is correctly registered to avoid 500s here
         $this->authorize('view', $ride);
 
         return response()->json($ride);
+
+    } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+        return response()->json(['message' => 'Insufficient clearance level.'], 403);
+    } catch (\Exception $e) {
+        // Catch-all to prevent the default Laravel 500 screen
+        Log::error("Ride Detail Retrieval Error: " . $e->getMessage());
+        return response()->json(['message' => 'System error during manifest retrieval.'], 500);
     }
+}
+
 
     public function cancel(Request $request, int $id): JsonResponse
     {

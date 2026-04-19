@@ -6,11 +6,10 @@ import axios from 'axios';
 const ApplicationDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const [application, setApplication] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [statusHistory, setStatusHistory] = useState([]);
 
   useEffect(() => {
     fetchApplication();
@@ -19,12 +18,11 @@ const ApplicationDetailPage = () => {
   const fetchApplication = async () => {
     try {
       setLoading(true);
-      setError('');
       const response = await axios.get(`/api/applications/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      setApplication(response.data);
-      if (response.data.status_logs) setStatusHistory(response.data.status_logs);
+      // The backend returns the application object directly or inside a data key
+      setApplication(response.data.data ? response.data.data[0] : response.data);
     } catch (err) {
       setError('System could not retrieve application records.');
     } finally {
@@ -33,164 +31,167 @@ const ApplicationDetailPage = () => {
   };
 
   const getStatusStyles = (status) => {
-    switch (status) {
-      case 'pending': return 'bg-amber-50 text-amber-700 border-amber-200 ring-amber-500/20';
+    switch (status?.toLowerCase()) {
+      case 'submitted':
+      case 'under_review': return 'bg-blue-50 text-blue-700 border-blue-200 ring-blue-500/20';
       case 'approved': return 'bg-emerald-50 text-emerald-700 border-emerald-200 ring-emerald-500/20';
       case 'rejected': return 'bg-rose-50 text-rose-700 border-rose-200 ring-rose-500/20';
-      default: return 'bg-slate-50 text-slate-600 border-slate-200 ring-slate-500/10';
+      case 'draft': return 'bg-slate-50 text-slate-600 border-slate-200 ring-slate-500/10';
+      default: return 'bg-amber-50 text-amber-700 border-amber-200 ring-amber-500/20';
     }
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-KE', {
-      day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
   };
 
   if (loading) return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
       <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-      <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Retrieving Records</p>
+      <p className="text-slate-500 font-black uppercase tracking-widest text-[10px]">Synchronizing Records</p>
     </div>
   );
 
+  if (error || !application) return <div className="p-20 text-center font-bold text-slate-400">{error || 'Record not found'}</div>;
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-20">
-      {/* Top Header / Navigation */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+      {/* Premium Header */}
+      <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
           <button 
             onClick={() => navigate('/applications')}
-            className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold text-xs uppercase tracking-tight transition-colors"
+            className="group flex items-center gap-3 text-slate-400 hover:text-indigo-600 transition-all"
           >
-            <span>←</span> Back to Gallery
+            <span className="p-2 rounded-xl group-hover:bg-indigo-50 transition-colors">←</span>
+            <span className="font-black text-[10px] uppercase tracking-[0.15em]">Back to Gallery</span>
           </button>
-          <div className="flex gap-3">
-             <button onClick={() => window.print()} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">🖨️</button>
+          <div className="flex items-center gap-4">
+             <span className="h-8 w-[1px] bg-slate-200 mx-2"></span>
+             <button onClick={() => window.print()} className="p-3 hover:bg-slate-100 rounded-2xl text-slate-500 transition-all active:scale-95">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+             </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 mt-10">
-        {/* Title Block */}
-        <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <span className="text-indigo-600 font-black text-xs uppercase tracking-[0.2em]">Application Record</span>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tighter mt-1">
-                {application?.government_service?.name || 'Service Details'}
+      <div className="max-w-7xl mx-auto px-8 mt-12">
+        {/* Main Title Section */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+                <span className="w-8 h-[2px] bg-indigo-600"></span>
+                <span className="text-indigo-600 font-black text-[10px] uppercase tracking-[0.3em]">Official Filing</span>
+            </div>
+            <h1 className="text-5xl font-black text-slate-900 tracking-tight">
+                {application.government_service?.name || 'Service Application'}
             </h1>
-            <p className="text-slate-400 font-mono text-sm mt-2">REF: {application.reference_number}</p>
+            <div className="flex items-center gap-4 font-mono text-xs text-slate-400">
+                <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-bold">
+                    REF: {application?.application_reference}
+                </span>
+                <span>•</span>
+                <span>Submitted {new Date(application.created_at).toLocaleDateString('en-KE')}</span>
+            </div>
           </div>
-          <div className={`px-6 py-3 rounded-2xl border font-black text-xs uppercase tracking-widest ring-4 ${getStatusStyles(application.status)}`}>
+          
+          <div className={`px-8 py-4 rounded-[2rem] border-2 font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/5 ${getStatusStyles(application.status)}`}>
             {application.status}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          {/* Main Content (left) */}
-          <div className="lg:col-span-8 space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          {/* Detailed Content */}
+          <div className="lg:col-span-8 space-y-12">
             
-            {/* Form Data Visualization */}
-            <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
-               <div className="px-10 py-8 border-b border-slate-100 bg-slate-50/50">
-                  <h3 className="font-black text-slate-900 uppercase tracking-tighter text-sm">Submission Data</h3>
-               </div>
-               <div className="p-10">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-8">
-                    {application.form_data && typeof application.form_data === 'object' ? (
-                      Object.entries(application.form_data).map(([key, value]) => (
-                        <div key={key} className="border-b border-slate-50 pb-4">
-                          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{key.replace(/_/g, ' ')}</label>
-                          <p className="text-slate-900 font-bold">{String(value)}</p>
+            {/* Documentation Section (The Uploaded Files) */}
+            <div className="bg-white rounded-[3rem] border border-slate-200/60 shadow-sm p-12">
+                <div className="flex items-center justify-between mb-10">
+                    <h3 className="font-black text-slate-900 uppercase tracking-tighter text-lg">Verified Documents</h3>
+                    <span className="text-[10px] font-black text-slate-400 uppercase bg-slate-50 px-4 py-2 rounded-full border border-slate-100">
+                        {Object.keys(application.documents || {}).length} Attachments
+                    </span>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {application.documents ? Object.entries(application.documents).map(([name, path]) => (
+                        <div key={name} className="group relative bg-slate-50 border border-slate-100 p-6 rounded-[2rem] hover:bg-indigo-600 transition-all duration-500 overflow-hidden">
+                            <div className="relative z-10 flex flex-col h-full justify-between">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black text-slate-400 group-hover:text-indigo-200 uppercase tracking-widest transition-colors">File Name</p>
+                                    <p className="font-bold text-slate-900 group-hover:text-white transition-colors truncate">{name}</p>
+                                </div>
+                                <a 
+                                    href={`/storage/${path}`} 
+                                    target="_blank" 
+                                    rel="noreferrer"
+                                    className="mt-6 flex items-center justify-center gap-2 bg-white text-slate-900 group-hover:bg-indigo-500 group-hover:text-white py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-slate-100 group-hover:border-indigo-400"
+                                >
+                                    View Digital Copy
+                                </a>
+                            </div>
+                            <div className="absolute -right-4 -bottom-4 text-slate-200/50 group-hover:text-white/10 transition-colors">
+                                <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" /></svg>
+                            </div>
                         </div>
-                      ))
-                    ) : (
-                      <div className="col-span-2 bg-slate-900 text-slate-300 p-6 rounded-2xl font-mono text-xs">
-                         {JSON.stringify(application.form_data, null, 2)}
-                      </div>
+                    )) : (
+                        <p className="text-slate-400 text-sm italic">No documents attached to this record.</p>
                     )}
-                  </div>
-               </div>
+                </div>
             </div>
 
-            {/* Timeline / Status History */}
-            <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-10">
-               <h3 className="font-black text-slate-900 uppercase tracking-tighter text-sm mb-10">Status Timeline</h3>
-               <div className="relative border-l-2 border-slate-100 ml-4 space-y-12">
-                  {statusHistory.map((log, idx) => (
-                    <div key={idx} className="relative pl-10">
-                        {/* Timeline Dot */}
-                        <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-4 border-white shadow-sm ring-2 ${
-                            log.status === 'approved' ? 'bg-emerald-500 ring-emerald-100' : 
-                            log.status === 'rejected' ? 'bg-rose-500 ring-rose-100' : 'bg-indigo-500 ring-indigo-100'
-                        }`}></div>
-                        <div>
-                           <p className="font-black text-slate-900 uppercase tracking-tight text-sm">{log.status}</p>
-                           <p className="text-xs text-slate-400 font-bold mb-3">{formatDate(log.created_at)}</p>
-                           {log.notes && (
-                             <div className="bg-slate-50 p-4 rounded-2xl text-slate-600 text-sm font-medium border border-slate-100 italic">
-                                "{log.notes}"
-                             </div>
-                           )}
-                        </div>
+            {/* Application Data visualization */}
+            <div className="bg-slate-900 rounded-[3rem] p-12 text-white shadow-2xl">
+                <h3 className="font-black uppercase tracking-widest text-[10px] text-slate-500 mb-10">Application Meta-Data</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Agency Assignee</label>
+                        <p className="text-sm font-medium text-slate-300">{application.agency_reference || 'Awaiting Reviewer Assignment'}</p>
                     </div>
-                  ))}
-               </div>
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">System Timestamp</label>
+                        <p className="text-sm font-medium text-slate-300">{new Date(application.created_at).toLocaleString('en-KE')}</p>
+                    </div>
+                    <div className="md:col-span-2 pt-8 border-t border-slate-800">
+                        <label className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Processing Notes</label>
+                        <p className="mt-4 text-slate-400 leading-relaxed italic text-sm">
+                            {application.processing_notes || "Submission received. Currently under initial integrity check by the department's digital filing system."}
+                        </p>
+                    </div>
+                </div>
             </div>
           </div>
 
-          {/* Sidebar (right) */}
+          {/* Sidebar */}
           <div className="lg:col-span-4 space-y-8">
-            
-            {/* Meta Card */}
-            <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-xl relative overflow-hidden">
-                <div className="relative z-10">
-                    <h4 className="font-black uppercase tracking-widest text-[10px] text-slate-400 mb-6">Service Overview</h4>
-                    <div className="space-y-6">
-                        <div>
-                            <p className="text-xs text-slate-500 font-bold">Category</p>
-                            <p className="text-sm font-bold text-indigo-400 uppercase tracking-tight">{application.government_service?.service_category?.name}</p>
-                        </div>
-                        <div>
-                            <p className="text-xs text-slate-500 font-bold">Requirements Check</p>
-                            <p className="text-xs text-slate-300 mt-2 leading-relaxed">{application.government_service?.requirements || 'Standard verification applies.'}</p>
-                        </div>
+            <div className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-sm">
+                <h4 className="font-black uppercase tracking-widest text-[10px] text-slate-400 mb-8">Service Category</h4>
+                <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-3xl border border-slate-100 mb-8">
+                    <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-black">
+                        {application.government_service?.name?.charAt(0)}
+                    </div>
+                    <div>
+                        <p className="text-xs font-black text-slate-900 uppercase">{application.government_service?.service_category?.name || 'General'}</p>
+                        <p className="text-[10px] text-slate-400 font-bold">Government Branch</p>
                     </div>
                 </div>
-                <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-600/10 blur-3xl rounded-full"></div>
+                
+                <div className="space-y-6">
+                    <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Requirement Summary</p>
+                        <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                            {application.government_service?.requirements || 'Standard verification protocols are in effect for this application type.'}
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            {/* Financial Status */}
-            {application.payments?.length > 0 && (
-              <div className="bg-indigo-600 rounded-[2.5rem] p-8 text-white shadow-lg shadow-indigo-200">
-                <h4 className="font-black uppercase tracking-widest text-[10px] text-indigo-200 mb-6">Financial Reconciliation</h4>
-                {application.payments.map((p, i) => (
-                    <div key={i} className="flex justify-between items-center bg-indigo-700/50 p-4 rounded-2xl border border-indigo-400/30">
-                        <div>
-                            <p className="text-xs font-black uppercase tracking-tighter">KES {p.amount}</p>
-                            <p className="text-[10px] text-indigo-300 font-bold">{formatDate(p.created_at)}</p>
-                        </div>
-                        <span className="bg-white text-indigo-600 text-[10px] font-black px-2 py-1 rounded-md uppercase">{p.status}</span>
-                    </div>
-                ))}
-              </div>
-            )}
-
-            {/* Quick Actions */}
-            <div className="space-y-3">
-                {application.status === 'draft' && (
-                  <button className="w-full bg-white border border-slate-200 text-slate-900 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm">
-                    Resume Draft
-                  </button>
-                )}
-                {application.status === 'rejected' && (
-                  <button className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
-                    Resubmit for Review
-                  </button>
-                )}
+            {/* Sticky Actions */}
+            <div className="sticky top-28 space-y-4">
+                <button 
+                  className="w-full bg-slate-900 text-white py-5 rounded-3xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-lg active:scale-95"
+                >
+                  Download Receipt (PDF)
+                </button>
                 <button 
                   onClick={() => navigate('/applications')}
-                  className="w-full bg-slate-100 text-slate-500 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-colors"
+                  className="w-full bg-white border border-slate-200 text-slate-500 py-5 rounded-3xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-50 transition-all active:scale-95"
                 >
                   Return to Dashboard
                 </button>

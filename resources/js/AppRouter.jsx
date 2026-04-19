@@ -141,7 +141,7 @@ const DashboardSwitcher = () => {
     switch (user?.role) {
         case 'admin': return <AdminDashboard />;
         case 'driver': return <DriverDashboard />;
-        case 'government_officer': return <OfficerDashboard />;
+        case 'officer': return <OfficerDashboard />;
         default: return <CitizenDashboard />;
     }
 };

@@ -4,7 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-
+use Illuminate\Support\Facades\Log;
 class MpesaService
 {
     protected function config(string $key, $default = null)
@@ -42,32 +42,45 @@ class MpesaService
         return base64_encode($shortcode.$passkey.$timestamp);
     }
 
-    public function stkPush(array $data): array
-    {
-        $timestamp = now()->format('YmdHis');
+   public function stkPush(array $data): array
+{
+    $timestamp = now()->format('YmdHis');
 
-        $payload = [
-            'BusinessShortCode' => $this->config('shortcode'),
-            'Password' => $this->generatePassword($timestamp),
-            'Timestamp' => $timestamp,
-            'TransactionType' => 'CustomerPayBillOnline',
-            'Amount' => $data['amount'],
-            'PartyA' => $data['phone'],
-            'PartyB' => $this->config('shortcode'),
-            'PhoneNumber' => $data['phone'],
-            'CallBackURL' => $this->config('callback_url'),
-            'AccountReference' => $data['account_reference'] ?? 'UrbanLink',
-            'TransactionDesc' => $data['description'] ?? 'UrbanLink payment',
-        ];
+    $payload = [
+        'BusinessShortCode' => $this->config('shortcode'),
+        'Password'          => $this->generatePassword($timestamp),
+        'Timestamp'         => $timestamp,
+        'TransactionType'   => 'CustomerPayBillOnline',
+        'Amount'            => (int) $data['amount'],           // Must be integer
+        'PartyA'            => $data['phone'],
+        'PartyB'            => $this->config('shortcode'),
+        'PhoneNumber'       => $data['phone'],
+        'CallBackURL'       => $this->config('callback_url'),
+        'AccountReference'  => $data['account_reference'] ?? 'UrbanLink-' . time(),
+        'TransactionDesc'   => $data['description'] ?? 'UrbanLink payment',
+    ];
 
-        $response = Http::withToken($this->authToken())
-            ->acceptJson()
-            ->post($this->baseUrl().'/mpesa/stkpush/v1/processrequest', $payload);
+    // === DEBUG LOGGING ===
+    Log::info('=== M-PESA STK PUSH REQUEST ===', [
+        'payload' => $payload,
+        'callback_url' => $this->config('callback_url'),
+        'timestamp' => $timestamp,
+    ]);
 
-        $response->throw();
+    $response = Http::withToken($this->authToken())
+        ->acceptJson()
+        ->post($this->baseUrl() . '/mpesa/stkpush/v1/processrequest', $payload);
 
-        return $response->json();
-    }
+    // Log full response even if it fails
+    Log::info('=== M-PESA STK PUSH RESPONSE ===', [
+        'status_code' => $response->status(),
+        'body'        => $response->json(),
+    ]);
+
+    $response->throw();   // This throws the 400 exception
+
+    return $response->json();
+}
 
     public function stkPushQuery(string $checkoutRequestId): array
     {

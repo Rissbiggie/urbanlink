@@ -10,7 +10,7 @@ class GovernmentService extends Model
     use HasFactory;
 
     protected $fillable = [
-        'service_category_id',
+      //  'service_category_id',
         'name',
         'code',
         'description',
@@ -31,4 +31,17 @@ class GovernmentService extends Model
     {
         return $this->hasMany(Application::class);
     }
+
+    protected $appends = ['payable_type', 'payable_id'];
+
+public function getPayableTypeAttribute(): string
+{
+    return 'government_service';
 }
+
+public function getPayableIdAttribute(): string
+{
+    return (string) $this->id;
+}
+}
+

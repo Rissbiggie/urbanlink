@@ -24,7 +24,7 @@ class RideService
         'passenger_id' => $passenger->id,
         // ADD THIS LINE:
         'driver_profile_id' => $data['driver_profile_id'] ?? null, 
-        'status' => isset($data['driver_profile_id']) ? 'accepted' : 'pending',
+        'status' => isset($data['driver_profile_id']) ? 'pending' : 'accepted',
         'pickup_lat' => $data['pickup_lat'],
         'pickup_lng' => $data['pickup_lng'],
         'pickup_address' => $data['pickup_address'],
@@ -36,12 +36,13 @@ class RideService
         'estimated_fare' => $estimatedFare,
         'distance_km' => $distanceKm,
         'duration_minutes' => $durationMinutes,
+        'payment_status' => isset($data['driver_profile_id']) ? 'unpaid' : 'paid',
     ]);
 
     // Only dispatch search job if no driver is pre-assigned
-    if (!$ride->driver_profile_id) {
-        FindDriverForRide::dispatch($ride);
-    }
+   // if (!$ride->driver_profile_id) {
+   //     FindDriverForRide::dispatch($ride);
+  //  }
 
     return $ride;
 }

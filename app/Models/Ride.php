@@ -64,5 +64,25 @@ public function isFullyCleared(): bool
 {
     return $this->status === 'completed' && $this->payment_status === 'paid';
 }
+
+// app/Models/Ride.php
+
+protected $appends = ['payable_type', 'payable_id'];
+
+/**
+ * Identify the type for the payment system.
+ */
+public function getPayableTypeAttribute(): string
+{
+    return 'ride';
+}
+
+/**
+ * Ensure the ID is returned as a string (as requested by your API).
+ */
+public function getPayableIdAttribute(): string
+{
+    return (string) $this->id;
+}
 }
 

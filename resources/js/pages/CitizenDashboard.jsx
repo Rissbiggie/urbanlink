@@ -8,6 +8,7 @@ const CitizenDashboard = () => {
   const [stats, setStats] = useState(null);
   const [recentRides, setRecentRides] = useState([]);
   const [applications, setApplications] = useState([]);
+  const [availableServices, setAvailableServices] = useState([]); // ← Added
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -30,6 +31,12 @@ const CitizenDashboard = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       setApplications(appsRes.data.data || []);
+
+      // Fetch available services for dashboard preview
+      const servicesRes = await axios.get('/api/services', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setAvailableServices(servicesRes.data.data || servicesRes.data || []);
 
       //Calculate stats from data
       setStats({
@@ -97,7 +104,7 @@ const CitizenDashboard = () => {
               <div>
                 <p className="text-gray-600 text-sm font-semibold uppercase tracking-wide">Total Rides</p>
                 <p className="text-4xl font-bold text-gray-900 mt-3">{stats?.totalRides || 0}</p>
-                <p className="text-sm text-gray-500 mt-1">Completed journeys</p>
+                <p className="text-sm text-gray-500 mt-1">Your journeys</p>
               </div>
               <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
                 <span className="text-2xl">🚗</span>
@@ -134,7 +141,7 @@ const CitizenDashboard = () => {
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions - Unchanged */}
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-12 border border-gray-100">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold text-gray-900">Quick Actions</h2>
@@ -152,24 +159,24 @@ const CitizenDashboard = () => {
               <p className="text-blue-100 text-sm">Book transportation</p>
             </Link>
             <Link
-              to="/applications"
+              to="/services"
               className="group bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 text-center"
             >
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors">
                 <span className="text-2xl">📋</span>
               </div>
               <h3 className="font-semibold text-lg mb-1">Apply Services</h3>
-              <p className="text-orange-100 text-sm">Government applications</p>
+              <p className="text-orange-100 text-sm">View service listing</p>
             </Link>
             <Link
-              to="/compliance"
+              to="/applications"
               className="group bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 text-center"
             >
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors">
                 <span className="text-2xl">✓</span>
               </div>
               <h3 className="font-semibold text-lg mb-1">Check Status</h3>
-              <p className="text-purple-100 text-sm">Compliance verification</p>
+              <p className="text-purple-100 text-sm">Review your filings</p>
             </Link>
             <Link
               to="/profile"
@@ -184,7 +191,43 @@ const CitizenDashboard = () => {
           </div>
         </div>
 
-        {/* Recent Activity Grid */}
+        {/* NEW: Available Services Preview */}
+        <div className="mb-12">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Available Services</h2>
+            <Link to="/services" className="text-indigo-600 hover:text-indigo-700 font-semibold text-sm flex items-center">
+              View All Services →
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {availableServices.length > 0 ? (
+              availableServices.slice(0, 6).map(service => (
+                <Link
+                  key={service.id}
+                  to={`/services/apply/${service.id}`}
+                  className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl hover:border-orange-200 transition-all group"
+                >
+                  <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-orange-600 group-hover:text-white transition-colors">
+                    <span className="text-2xl">📋</span>
+                  </div>
+                  <h3 className="font-semibold text-lg text-gray-900 group-hover:text-orange-600 transition-colors">
+                    {service.name}
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-2 line-clamp-2">
+                    {service.description || "Official government service application"}
+                  </p>
+                </Link>
+              ))
+            ) : (
+              <div className="col-span-3 bg-white border border-dashed border-gray-200 rounded-2xl p-12 text-center">
+                <p className="text-gray-400">No services available at the moment</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Activity Grid - Unchanged */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Recent Rides */}
           <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
@@ -270,9 +313,9 @@ const CitizenDashboard = () => {
                     </div>
                     <div className="flex-1">
                       <p className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
-                        {app.application_reference}
+                        {app.application_reference || `REF-${app.id}`}
                       </p>
-                      <p className="text-sm text-gray-600">{new Date(app.submitted_at).toLocaleDateString()}</p>
+                      <p className="text-sm text-gray-600">{new Date(app.submitted_at || app.created_at).toLocaleDateString()}</p>
                     </div>
                     <div className="text-right">
                       <span className={`inline-block text-xs px-3 py-1 rounded-full font-medium ${
@@ -293,7 +336,7 @@ const CitizenDashboard = () => {
                 </div>
                 <p className="text-gray-500 mb-4">No applications yet</p>
                 <Link
-                  to="/applications"
+                  to="/services"
                   className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
                 >
                   <span className="mr-2">🚀</span>
