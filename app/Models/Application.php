@@ -48,4 +48,16 @@ class Application extends Model
     {
         return $this->morphMany(Payment::class, 'payable');
     }
+
+    // app/Models/Application.php
+
+
+public function service()
+{
+    // You must specify 'government_service_id' because it doesn't follow 
+    // the standard 'service_id' naming convention.
+    return $this->belongsTo(GovernmentService::class, 'government_service_id');
 }
+
+}
+

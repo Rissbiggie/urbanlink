@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
-import toast, { Toaster } from 'react-hot-toast';
+import { authAPI } from '../api'; // This is your apiClient
+import toast, { Toaster } from 'react-hot-toast'; // Missing import
 
 const ProfilePage = () => {
-    const { user, token, updateProfile } = useAuth();
+    const { user, token, updateProfile: updateLocalUser } = useAuth(); // Renamed context function
     const [loading, setLoading] = useState(false);
     const [editMode, setEditMode] = useState(false);
 
@@ -31,11 +31,9 @@ const ProfilePage = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // Advanced KRA PIN Formatter (A000000000X)
     const handleKRAChange = (e) => {
         let val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
         if (val.length > 11) val = val.substring(0, 11);
-        
         setFormData(prev => ({ ...prev, kra_pin: val }));
     };
 
@@ -45,11 +43,24 @@ const ProfilePage = () => {
         const toastId = toast.loading('Syncing with Central Registry...');
 
         try {
-            await updateProfile(formData);
+            // 1. Send data to backend using the authAPI put('/auth/profile')
+            const response = await authAPI.updateProfile(formData);
+            
+            // 2. Update Global Auth Context so the Dashboard/Header updates name immediately
+            if (updateLocalUser) {
+                // response.data usually contains the updated user object from Laravel
+                updateLocalUser(response.data.user || response.data); 
+            }
+
             toast.success('Identity Updated Successfully', { id: toastId });
             setEditMode(false);
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Update Rejected', { id: toastId });
+            // Standardize Laravel validation error messages
+            const errorMsg = error.response?.data?.errors 
+                ? Object.values(error.response.data.errors)[0][0] 
+                : (error.response?.data?.message || 'Update Rejected');
+                
+            toast.error(errorMsg, { id: toastId });
         } finally {
             setLoading(false);
         }
@@ -59,11 +70,10 @@ const ProfilePage = () => {
         <div className="min-h-screen bg-[#F8FAFC] pb-20">
             <Toaster position="top-right" />
             
-            {/* Header: Identity Focus */}
             <div className="bg-white border-b border-slate-200 pt-16 pb-12 px-6">
-                <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-end gap-6">
+                <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-end gap-6 text-left">
                     <div>
-                        <span className="text-indigo-600 font-black text-[10px] uppercase tracking-[0.3em] mb-2 block">Citizen Identity</span>
+                        <span className="text-indigo-600 font-black text-[10px] uppercase tracking-[0.4em] mb-2 block">Citizen Identity</span>
                         <h1 className="text-5xl font-black text-slate-900 tracking-tighter italic">My Profile.</h1>
                     </div>
                     {!editMode && (
@@ -78,63 +88,29 @@ const ProfilePage = () => {
             </div>
 
             <div className="max-w-4xl mx-auto px-6 -mt-10">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    
-                    {/* Main Identity Form */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
                     <div className="lg:col-span-8">
                         <form onSubmit={handleSubmit} className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
                             <div className="p-10 space-y-8">
                                 <section className="space-y-6">
                                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Personal Details</h3>
-                                    
-                                    <ProfileField 
-                                        label="Full Legal Name" 
-                                        name="name"
-                                        value={formData.name} 
-                                        onChange={handleInputChange} 
-                                        disabled={!editMode}
-                                        placeholder="As it appears on ID"
-                                    />
-
+                                    <ProfileField label="Full Legal Name" name="name" value={formData.name} onChange={handleInputChange} disabled={!editMode} placeholder="As it appears on ID" />
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <ProfileField 
-                                            label="Mobile Number" 
-                                            name="phone"
-                                            value={formData.phone} 
-                                            onChange={handleInputChange} 
-                                            disabled={!editMode}
-                                            placeholder="07XX XXX XXX"
-                                        />
-                                        <ProfileField 
-                                            label="National ID" 
-                                            name="national_id"
-                                            value={formData.national_id} 
-                                            onChange={handleInputChange} 
-                                            disabled={!editMode}
-                                            placeholder="8-digit number"
-                                            maxLength="8"
-                                        />
+                                        <ProfileField label="Mobile Number" name="phone" value={formData.phone} onChange={handleInputChange} disabled={!editMode} placeholder="07XX XXX XXX" />
+                                        <ProfileField label="National ID" name="national_id" value={formData.national_id} onChange={handleInputChange} disabled={!editMode} placeholder="8-digit number" maxLength="8" />
                                     </div>
                                 </section>
 
                                 <section className="space-y-6 pt-6 border-t border-slate-50">
-                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-emerald-600">Tax Compliance</h3>
-                                    <ProfileField 
-                                        label="KRA PIN Number" 
-                                        name="kra_pin"
-                                        value={formData.kra_pin} 
-                                        onChange={handleKRAChange} 
-                                        disabled={!editMode}
-                                        placeholder="AXXXXXXXXXA"
-                                        className="font-mono uppercase tracking-widest"
-                                    />
+                                    <h3 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest ml-1">Tax Compliance</h3>
+                                    <ProfileField label="KRA PIN Number" name="kra_pin" value={formData.kra_pin} onChange={handleKRAChange} disabled={!editMode} placeholder="AXXXXXXXXXA" className="font-mono uppercase tracking-widest" />
                                 </section>
 
                                 <div className="bg-indigo-50/50 rounded-2xl p-6 border border-indigo-100">
                                     <div className="flex gap-4">
                                         <span className="text-xl">🛡️</span>
                                         <p className="text-[11px] font-medium text-indigo-900 leading-relaxed">
-                                            Your data is encrypted using AES-256. Changes to National ID or KRA PIN will trigger a re-verification with government registries (IPRS/iTax).
+                                            Your data is encrypted using AES-256. Changes to National ID or KRA PIN will trigger a re-verification with government registries.
                                         </p>
                                     </div>
                                 </div>
@@ -142,18 +118,10 @@ const ProfilePage = () => {
 
                             {editMode && (
                                 <div className="bg-slate-50 p-8 border-t border-slate-100 flex gap-4">
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="flex-1 bg-indigo-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-indigo-100 active:scale-95 transition-all"
-                                    >
+                                    <button type="submit" disabled={loading} className="flex-1 bg-indigo-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-indigo-100 active:scale-95 transition-all">
                                         {loading ? 'Transmitting...' : 'Commit Changes'}
                                     </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setEditMode(false)}
-                                        className="px-10 bg-white border border-slate-200 text-slate-400 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:text-slate-900 transition-all"
-                                    >
+                                    <button type="button" onClick={() => setEditMode(false)} className="px-10 bg-white border border-slate-200 text-slate-400 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:text-slate-900 transition-all">
                                         Cancel
                                     </button>
                                 </div>
@@ -161,7 +129,6 @@ const ProfilePage = () => {
                         </form>
                     </div>
 
-                    {/* Sidebar: Compliance Badges */}
                     <div className="lg:col-span-4 space-y-6">
                         <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white">
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Verification Radar</h3>
@@ -176,23 +143,17 @@ const ProfilePage = () => {
                             </button>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
     );
 };
 
-// --- Sub-Components ---
-
+// --- Helper Components ---
 const ProfileField = ({ label, className = "", disabled, ...props }) => (
     <div className="space-y-2">
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
-        <input
-            disabled={disabled}
-            className={`w-full bg-slate-50 border-none rounded-2xl px-5 py-4 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 transition-all placeholder:text-slate-300 ${className}`}
-            {...props}
-        />
+        <input disabled={disabled} className={`w-full bg-slate-50 border-none rounded-2xl px-5 py-4 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-30 transition-all placeholder:text-slate-300 ${className}`} {...props} />
     </div>
 );
 

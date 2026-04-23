@@ -28,7 +28,7 @@ export const authAPI = {
     register: (payload) => apiClient.post('/auth/register', payload),
     getMe: () => apiClient.get('/auth/me'),
     logout: () => apiClient.post('/auth/logout'),
-    updateProfile: (data) => apiClient.put('/user/profile', data),
+    updateProfile: (data) => apiClient.put('/auth/profile', data),
 };
 
 /**

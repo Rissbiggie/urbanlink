@@ -64,9 +64,7 @@ const ApplicationDetailPage = () => {
           </button>
           <div className="flex items-center gap-4">
              <span className="h-8 w-[1px] bg-slate-200 mx-2"></span>
-             <button onClick={() => window.print()} className="p-3 hover:bg-slate-100 rounded-2xl text-slate-500 transition-all active:scale-95">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-             </button>
+           
           </div>
         </div>
       </div>
@@ -80,7 +78,7 @@ const ApplicationDetailPage = () => {
                 <span className="text-indigo-600 font-black text-[10px] uppercase tracking-[0.3em]">Official Filing</span>
             </div>
             <h1 className="text-5xl font-black text-slate-900 tracking-tight">
-                {application.government_service?.name || 'Service Application'}
+                {application.service?.name || 'Service Application'}
             </h1>
             <div className="flex items-center gap-4 font-mono text-xs text-slate-400">
                 <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-bold">
@@ -138,7 +136,7 @@ const ApplicationDetailPage = () => {
 
             {/* Application Data visualization */}
             <div className="bg-slate-900 rounded-[3rem] p-12 text-white shadow-2xl">
-                <h3 className="font-black uppercase tracking-widest text-[10px] text-slate-500 mb-10">Application Meta-Data</h3>
+                <h3 className="font-black uppercase tracking-widest text-[10px] text-slate-500 mb-10">Application Data</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                     <div className="space-y-2">
                         <label className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Agency Assignee</label>
@@ -184,11 +182,6 @@ const ApplicationDetailPage = () => {
 
             {/* Sticky Actions */}
             <div className="sticky top-28 space-y-4">
-                <button 
-                  className="w-full bg-slate-900 text-white py-5 rounded-3xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-lg active:scale-95"
-                >
-                  Download Receipt (PDF)
-                </button>
                 <button 
                   onClick={() => navigate('/applications')}
                   className="w-full bg-white border border-slate-200 text-slate-500 py-5 rounded-3xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-50 transition-all active:scale-95"

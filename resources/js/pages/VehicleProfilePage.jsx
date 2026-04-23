@@ -63,11 +63,6 @@ export default function VehicleProfilePage() {
                         </div>
                     </div>
 
-                    <div className="bg-indigo-600 rounded-[3rem] p-10 text-white shadow-xl shadow-indigo-100">
-                        <h3 className="font-black text-xs uppercase tracking-widest mb-4">Firmware Update</h3>
-                        <p className="text-xs font-medium text-indigo-100 leading-relaxed mb-6">Your asset is running the latest UrbanLink Pilot OS (v4.2.0).</p>
-                        <button className="w-full bg-white text-indigo-600 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest">Run Diagnostics</button>
-                    </div>
                 </div>
             </div>
         </div>

@@ -17,9 +17,19 @@ class ApplicationController extends Controller
     }
 
     public function index(Request $request): JsonResponse
-    {
-        return response()->json($this->service->listForUser($request->user()));
-    }
+{
+    // 1. Fetch the collection from your service layer
+    $applications = $this->service->listForUser($request->user());
+
+    // 2. Eager load the 'service' relationship 
+    // We specify columns (id, name) to keep the response lightweight
+    $applications->load('service:id,name,code');
+
+    return response()->json([
+        'status' => 'success',
+        'data' => $applications
+    ]);
+}
 public function store(Request $request): JsonResponse
 {
     // 1. Basic validation for the ID and that 'documents' is present
@@ -71,13 +81,17 @@ $storedPaths[$docName] = $path;
 
     return response()->json($application, 201);
 }
-    public function show(Request $request, int $id): JsonResponse
-    {
-        $application = $this->service->getForUser($request->user(), $id);
-        $this->authorize('view', $application);
 
-        return response()->json($application);
-    }
+public function show(Request $request, int $id): JsonResponse
+{
+    $application = $this->service->getForUser($request->user(), $id);
+    $this->authorize('view', $application);
+
+    // Eager load the 'service' relationship now that it's defined correctly
+    $application->load('service:id,name,code'); 
+
+    return response()->json($application);
+}
 
     public function update(Request $request, int $id): JsonResponse
     {

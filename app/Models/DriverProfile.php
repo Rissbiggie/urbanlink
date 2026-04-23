@@ -48,4 +48,5 @@ public function vehicle()
     return $this->hasOne(\App\Models\Vehicle::class, 'driver_profile_id');
 }
 
+
 }

@@ -16,17 +16,19 @@ import EarningsPage from './pages/EarningsPage';
 import VehicleProfilePage from './pages/VehicleProfilePage';
 import RequestRidePage from './pages/RequestRidePage';
 import RidesPage from './pages/RidesPage';
+//import GlobalRidesPage from './pages/GlobalRidesPage';
 import PaymentsPage from './pages/PaymentsPage';
 import UsersManagementPage from './pages/UsersManagementPage';
 import NotFoundPage from './pages/NotFoundPage';
 import RideDetailPage from './pages/RideDetailPage';
-
+import ProfilePage from './pages/ProfilePage';
 // --- GOVERNANCE & FILING IMPORTS ---
 // Matching filenames exactly as they appear in resources/js/pages/
 import ServiceListingPage from './pages/ServiceListingPage';
 import ApplicationProcessPage from './pages/ApplicationProcessPage';
 import ApplicationDetailPage from './pages/ApplicationDetailPage';
 import ApplicationsPage from './pages/ApplicationsPage'; 
+import GlobalRidesPage from './pages/GlobalRidesPage';
 // -----------------------------------
 
 const ProtectedRoute = ({ children, requiredRole }) => {
@@ -88,15 +90,22 @@ const AppRouter = () => {
 
                 {/* Financials */}
                 <Route path="/payments" element={
-                    <ProtectedRoute>
+                    <ProtectedRoute   >
                         <PaymentsPage />
                     </ProtectedRoute>
                 } />
 
+                   <Route path="/globalrides" element={
+                    <ProtectedRoute   requiredRole="admin" >
+                        <GlobalRidesPage/>
+                    </ProtectedRoute>
+                } />
+
+
                 {/* --- GOVERNANCE FLOW --- */}
                 {/* 1. Catalog of services */}
                 <Route path="/services" element={
-                    <ProtectedRoute requiredRole="citizen">
+                    <ProtectedRoute requiredRole={['citizen', 'admin','officer']}>
                         <ServiceListingPage />
                     </ProtectedRoute>
                 } />
@@ -112,6 +121,14 @@ const AppRouter = () => {
                 <Route path="/applications" element={
                     <ProtectedRoute>
                         <ApplicationsPage />
+                    </ProtectedRoute>
+                } />
+
+
+                {/* profile*/}
+                <Route path="/profile" element={
+                    <ProtectedRoute>
+                        <ProfilePage/>
                     </ProtectedRoute>
                 } />
 

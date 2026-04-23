@@ -7,7 +7,9 @@ use App\Models\User;
 use App\Models\Application;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-
+use App\Models\Ride;
+use Exception;
+use Illuminate\Support\Facades\Log;
 class AdminController extends Controller
 {
     public function dashboard(): JsonResponse
@@ -17,7 +19,8 @@ class AdminController extends Controller
         $verifiedUsers = User::where('is_verified', true)->count();
         $drivers = User::where('role', 'driver')->count();
         $citizens = User::where('role', 'citizen')->count();
-
+        $admins = User::where('role', 'admin')->count();
+        $officers = User::where('role','officer')->count();
         // Ride statistics
         $totalRides = \App\Models\Ride::count();
         $completedRides = \App\Models\Ride::where('status', 'completed')->count();
@@ -65,6 +68,8 @@ class AdminController extends Controller
                 'verified_users' => $verifiedUsers,
                 'drivers' => $drivers,
                 'citizens' => $citizens,
+                'admins'=> $admins,
+                'officers'=>$officers,
                 'total_rides' => $totalRides,
                 'completed_rides' => $completedRides,
                 'cancelled_rides' => $cancelledRides,
@@ -154,4 +159,63 @@ class AdminController extends Controller
 
         return response()->json($user);
     }
+
+public function getAllRides()
+{
+    try {
+        $rides = Ride::with([
+            // Use the exact names of the methods in your Ride.php model
+            'passenger', // Usually linked to passenger_id
+            'driverProfile.user' // Usually linked to driver_profile_id
+        ])
+        ->latest()
+        ->paginate(15);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $rides
+        ]);
+        
+    } catch (Exception $e) {
+        Log::error("Ride Retrieval Error: " . $e->getMessage());
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Internal Server Error'
+        ], 500);
+    }
+}
+
+/**
+ * Fetch all government service applications with relationships.
+ * * @return \Illuminate\Http\JsonResponse
+ */
+public function getAllApplications()
+{
+    try {
+        // We eager load the 'user' (citizen) and the 'service' itself
+        // Ensure your Application model has these relationship methods defined
+        $applications = Application::with([
+            'user:id,name,email,phone', 
+            'service:id,name,code'
+        ])
+        ->latest()
+        ->paginate(15);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $applications
+        ]);
+        
+    } catch (\Exception $e) {
+        // Log error for debugging (found in storage/logs/laravel.log)
+        Log::error("Application Retrieval Error: " . $e->getMessage());
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Internal Server Error',
+            'debug' => $e->getMessage() // Consider removing 'debug' in production
+        ], 500);
+    }
+}
+
 }

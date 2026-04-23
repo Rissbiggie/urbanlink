@@ -84,5 +84,19 @@ public function getPayableIdAttribute(): string
 {
     return (string) $this->id;
 }
+
+// Define the relationship to the User (the person who booked the ride)
+    // Assumes your rides table has a 'user_id' column
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    // Define the relationship to the Driver
+    // Assumes your rides table has a 'driver_id' column
+    public function driver()
+    {
+        return $this->belongsTo(DriverProfile::class, 'driver_id');
+    }
 }
 

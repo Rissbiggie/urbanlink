@@ -15,10 +15,13 @@ class ApplicationService
         return Application::where('user_id', $user->id)->latest()->paginate(15);
     }
 
-    public function getForUser(User $user, int $id): Application
-    {
-        return Application::where('user_id', $user->id)->findOrFail($id);
-    }
+  // Inside your ApplicationService.php
+public function getForUser($user, $id)
+{
+    return Application::where('user_id', $user->id)
+        ->with('service:id,name') // This ensures the service name is always included
+        ->findOrFail($id);
+}
 
     public function create(User $user, array $data): Application
     {

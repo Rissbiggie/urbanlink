@@ -1,80 +1,80 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getEcho } from '../services/broadcast';
 import DriverMap from '../components/DriverMap';
 import toast, { Toaster } from 'react-hot-toast';
 import { driverAPI } from '../api'; 
 
-/**
- * MAIN PAGE COMPONENT
- */
 export default function DriverDashboardPage() {
     const { user, loading: authLoading } = useAuth();
     
-    // State Management
     const [profile, setProfile] = useState(null);
-    const [rides, setRides] = useState([]);
+    const [allRides, setAllRides] = useState([]);
     const [earnings, setEarnings] = useState(null);
     const [vehicles, setVehicles] = useState(null);
     const [payouts, setPayouts] = useState([]);
     
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [statusFilter, setStatusFilter] = useState('all');
     
     const [activeRide, setActiveRide] = useState(null);
     const [driverLocation, setDriverLocation] = useState(null);
     const locationSentRef = useRef(0);
 
-    /**
-     * Fetch all driver-related data
-     * FIX: Corrected the nesting to match your JSON response
-     */
+    // Category Counts
+    const [rideStats, setRideStats] = useState({
+        pending: 0,
+        accepted: 0,
+        in_progress: 0,
+        completed: 0,
+        paid: 0,
+        unpaid: 0,
+    });
+
     const loadDriverData = useCallback(async () => {
         setLoading(true);
         try {
-            const params = { 
-                status: statusFilter !== 'all' ? statusFilter : undefined 
-            };
-            
             const [profileRes, ridesRes, earningsRes, payoutRes] = await Promise.all([
                 driverAPI.getProfile(),
-                driverAPI.getRides(params),
+                driverAPI.getRides({}),           // Fetch all rides
                 driverAPI.getEarnings(),
                 driverAPI.getPayouts()
             ]);
 
-            // According to your log: the data is directly in profileRes.data.data
             const pData = profileRes.data?.data;
-            
             setProfile(pData);
             setVehicles(pData?.vehicle || null);
-            
-            // Defensive mapping for other endpoints
-            setRides(ridesRes.data?.data || ridesRes.data || []);
+
+            const ridesData = ridesRes.data?.data || ridesRes.data || [];
+            setAllRides(ridesData);
+
             setEarnings(earningsRes.data?.data || earningsRes.data || null);
             setPayouts(payoutRes.data?.data || payoutRes.data || []);
 
+            // Calculate Category Stats
+            const stats = {
+                pending: ridesData.filter(r => r.status === 'pending').length,
+                accepted: ridesData.filter(r => r.status === 'accepted').length,
+                in_progress: ridesData.filter(r => r.status === 'in_progress').length,
+                completed: ridesData.filter(r => r.status === 'completed').length,
+                paid: ridesData.filter(r => r.payment_status === 'paid').length,
+                unpaid: ridesData.filter(r => r.payment_status === 'unpaid').length,
+            };
+            setRideStats(stats);
+
         } catch (err) {
             console.error("Dashboard Load Error:", err);
-            toast.error("Fleet sync failed. Check connection.");
+            toast.error("Failed to load dashboard data");
         } finally {
             setLoading(false);
         }
-    }, [statusFilter]);
+    }, []);
 
-    /**
-     * Initial Load
-     */
     useEffect(() => {
-        if (user?.role === 'driver') {
-            loadDriverData();
-        }
+        if (user?.role === 'driver') loadDriverData();
     }, [user, loadDriverData]);
 
-    /**
-     * Real-time Location Watcher
-     */
+    // Real-time Location
     useEffect(() => {
         if (user?.role !== 'driver' || !navigator.geolocation) return;
         
@@ -87,23 +87,18 @@ export default function DriverDashboardPage() {
                 driverAPI.updateLocation({ lat, lng }).catch(() => {});
             }
         }, null, { enableHighAccuracy: true });
-        
+
         return () => navigator.geolocation.clearWatch(watchId);
     }, [user]);
 
-    /**
-     * Toggle Online/Offline Status
-     */
     const toggleAvailability = async () => {
         setSaving(true);
         try {
             const { data } = await driverAPI.toggleAvailability();
             const isAvailable = data?.data?.is_available ?? data?.is_available;
             setProfile(prev => ({ ...prev, is_available: isAvailable }));
-            
-            toast(isAvailable ? 'SYSTEM ONLINE' : 'SYSTEM OFFLINE', {
-                icon: isAvailable ? '📡' : '💤',
-                style: { borderRadius: '1rem', background: '#0f172a', color: '#fff', fontWeight: 'bold' }
+            toast(isAvailable ? '🟢 SYSTEM ONLINE' : '🔴 SYSTEM OFFLINE', {
+                style: { borderRadius: '9999px', background: '#0f172a', color: '#fff' }
             });
         } catch (err) {
             toast.error("Status update failed");
@@ -112,9 +107,6 @@ export default function DriverDashboardPage() {
         }
     };
 
-    /**
-     * Process Ride Lifecycle
-     */
     const runRideAction = async (rideId, action) => {
         setSaving(true);
         try {
@@ -122,10 +114,10 @@ export default function DriverDashboardPage() {
             if (action === 'start') await driverAPI.startRide(rideId);
             if (action === 'complete') await driverAPI.completeRide(rideId);
             
-            toast.success(`Job updated: ${action}ed`);
+            toast.success(`Ride ${action}ed successfully`);
             loadDriverData(); 
         } catch (err) {
-            toast.error(err.response?.data?.message || "Action denied");
+            toast.error(err.response?.data?.message || "Action failed");
         } finally {
             setSaving(false);
         }
@@ -133,65 +125,54 @@ export default function DriverDashboardPage() {
 
     if (authLoading || loading) return <LoadingState />;
 
-    if (user?.role !== 'driver') {
-        return <NonDriverState />;
-    }
+    if (user?.role !== 'driver') return <NonDriverState />;
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans">
             <Toaster position="bottom-center" />
             
+            {/* Header */}
             <div className="bg-white border-b border-slate-200 pt-16 pb-12 px-6">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end gap-6">
                     <div>
-                        <span className="text-emerald-600 font-black text-[10px] uppercase tracking-[0.3em] mb-2 block">Pilot Command</span>
+                        <span className="text-emerald-600 font-black text-[10px] uppercase tracking-[0.3em]">PILOT COMMAND CENTER</span>
                         <h1 className="text-5xl font-black text-slate-900 tracking-tighter italic">Shift Active.</h1>
                     </div>
                     <button 
                         onClick={toggleAvailability}
                         disabled={saving}
-                        className={`px-10 py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest transition-all shadow-2xl ${
-                            profile?.is_available 
-                                ? 'bg-emerald-600 text-white' 
-                                : 'bg-slate-900 text-white'
+                        className={`px-10 py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-2xl transition-all ${
+                            profile?.is_available ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-white'
                         }`}
                     >
-                        {profile?.is_available ? '📡 Go Offline' : '🔌 Go Online'}
+                        {profile?.is_available ? '📡 GO OFFLINE' : '🔌 GO ONLINE'}
                     </button>
                 </div>
             </div>
 
             <div className="max-w-7xl mx-auto px-6 -mt-10">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
-                    <MetricTile label="Today" value={earnings?.today} icon="💰" />
-                    <MetricTile label="Weekly" value={earnings?.week} icon="📊" />
-                    <MetricTile label="Rating" value={profile?.average_rating || '5.0'} unit="/ 5.0" icon="⭐" />
-                    <MetricTile label="Balance" value={earnings?.total} icon="🏦" />
+                
+                {/* Status Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-12">
+                    <StatusCard label="Pending" count={rideStats.pending} color="amber" icon="⏳" />
+                    <StatusCard label="Accepted" count={rideStats.accepted} color="blue" icon="✅" />
+                    <StatusCard label="In Progress" count={rideStats.in_progress} color="indigo" icon="🚗" />
+                    <StatusCard label="Completed" count={rideStats.completed} color="emerald" icon="🏁" />
+                    <StatusCard label="Paid" count={rideStats.paid} color="green" icon="💰" />
+                    <StatusCard label="Unpaid" count={rideStats.unpaid} color="rose" icon="⚠️" />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                     <div className="lg:col-span-8 space-y-8">
-                        <div className="bg-white border border-slate-200 rounded-[3rem] p-4 shadow-sm h-[500px] relative">
+                        <div className="bg-white border border-slate-200 rounded-[3rem] p-4 shadow-sm h-[500px] relative overflow-hidden">
                             <DriverMap driverLocation={driverLocation} assignedRide={activeRide} />
                         </div>
 
                         <section>
-                            <div className="flex justify-between items-end mb-6">
-                                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Assigned Jobs</h2>
-                                <select 
-                                    value={statusFilter} 
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="bg-transparent border-none font-black text-[10px] uppercase text-indigo-600"
-                                >
-                                    <option value="all">View All</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="accepted">Accepted</option>
-                                    <option value="in_progress">Active</option>
-                                </select>
-                            </div>
+                            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter mb-6">Recent Jobs</h2>
                             <div className="space-y-4">
-                                {rides.length > 0 ? (
-                                    rides.map(ride => (
+                                {allRides.length > 0 ? (
+                                    allRides.slice(0, 8).map(ride => (
                                         <RideActionCard 
                                             key={ride.id} 
                                             ride={ride} 
@@ -200,8 +181,8 @@ export default function DriverDashboardPage() {
                                         />
                                     ))
                                 ) : (
-                                    <div className="bg-white border-2 border-dashed border-slate-200 rounded-[2rem] py-12 text-center">
-                                        <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em]">No Active Deployments</p>
+                                    <div className="bg-white border-2 border-dashed border-slate-200 rounded-[2rem] py-16 text-center">
+                                        <p className="text-slate-400 font-bold text-sm">No rides found</p>
                                     </div>
                                 )}
                             </div>
@@ -209,28 +190,17 @@ export default function DriverDashboardPage() {
                     </div>
 
                     <div className="lg:col-span-4 space-y-8">
-                        <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden group">
-                            <span className="text-emerald-400 font-black text-[10px] uppercase tracking-[0.2em] mb-4 block">Active Asset</span>
-                            <h3 className="text-2xl font-black tracking-tight mb-1">
-                                {vehicles?.make || 'Toyota'} {vehicles?.model || 'Corolla'}
+                        {/* Vehicle Card */}
+                        <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden">
+                            <span className="text-emerald-400 font-black text-[10px] uppercase tracking-widest">ACTIVE VEHICLE</span>
+                            <h3 className="text-2xl font-black mt-2">
+                                {vehicles?.make} {vehicles?.model}
                             </h3>
-                            <p className="text-slate-400 font-mono text-sm uppercase mb-8">
-                                {vehicles?.plate_number || 'KAA 000X'}
-                            </p>
-                            <div className="absolute -right-6 -bottom-6 text-8xl opacity-10">🚗</div>
+                            <p className="font-mono text-slate-400 mt-1">{vehicles?.plate_number}</p>
+                            <div className="absolute -right-8 -bottom-8 text-9xl opacity-10">🚗</div>
                         </div>
 
-                        <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-sm">
-                            <h3 className="font-black text-slate-900 uppercase text-xs tracking-widest mb-6">Settlements</h3>
-                            <div className="space-y-4">
-                                {payouts.length > 0 ? payouts.map(pay => (
-                                    <div key={pay.id} className="flex justify-between items-center py-3 border-b border-slate-50 last:border-0">
-                                        <span className="text-xs font-black text-slate-900 uppercase">#{pay.ride_reference || 'REF'}</span>
-                                        <span className="text-xs font-black text-slate-900">KES {pay.amount}</span>
-                                    </div>
-                                )) : <p className="text-slate-400 text-[9px] font-bold uppercase tracking-widest">No history</p>}
-                            </div>
-                        </div>
+                       
                     </div>
                 </div>
             </div>
@@ -238,49 +208,94 @@ export default function DriverDashboardPage() {
     );
 }
 
-const MetricTile = ({ label, value, unit = "KES", icon }) => (
-    <div className="bg-white border border-slate-200 p-6 rounded-[2rem] shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
-            <span className="text-xl">{icon}</span>
-        </div>
-        <div className="flex items-baseline gap-1">
-            <span className="text-[10px] font-black text-slate-400 uppercase">{unit}</span>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tighter">
-                {Number(value || 0).toLocaleString()}
-            </h2>
-        </div>
-    </div>
-);
+/* ===================== STATUS SUMMARY CARD ===================== */
+const StatusCard = ({ label, count, color, icon }) => {
+    const colorMap = {
+        amber: "bg-amber-50 text-amber-600 border-amber-100",
+        blue: "bg-blue-50 text-blue-600 border-blue-100",
+        indigo: "bg-indigo-50 text-indigo-600 border-indigo-100",
+        emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
+        green: "bg-green-50 text-green-600 border-green-100",
+        rose: "bg-rose-50 text-rose-600 border-rose-100",
+    };
 
+    return (
+        <div className={`rounded-3xl p-6 border ${colorMap[color] || colorMap.emerald}`}>
+            <div className="flex items-center justify-between">
+                <span className="text-3xl">{icon}</span>
+                <span className="text-4xl font-black tabular-nums">{count}</span>
+            </div>
+            <p className="mt-4 text-sm font-bold uppercase tracking-widest">{label}</p>
+        </div>
+    );
+};
+
+/* ===================== RIDE CARD ===================== */
 const RideActionCard = ({ ride, onAction, onShowMap }) => (
-    <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm">
-        <p className="text-xs font-bold text-slate-800 italic mb-6">{ride.pickup_address} → {ride.dropoff_address}</p>
-        <div className="flex gap-2">
-            <button onClick={onShowMap} className="flex-1 border py-4 rounded-xl font-black text-[9px] uppercase tracking-widest">Map</button>
+    <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm hover:shadow-md transition-all">
+        <div className="flex justify-between items-start mb-4">
+            <div>
+                <p className="text-xs font-mono text-slate-500">#{ride.ride_reference}</p>
+                <p className="font-semibold text-slate-900 mt-1 line-clamp-1">
+                    {ride.pickup_address} → {ride.dropoff_address}
+                </p>
+            </div>
+            <div className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${
+                ride.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
+                ride.status === 'in_progress' ? 'bg-indigo-100 text-indigo-700' :
+                ride.status === 'accepted' ? 'bg-blue-100 text-blue-700' : 
+                'bg-amber-100 text-amber-700'
+            }`}>
+                {ride.status}
+            </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+            <button 
+                onClick={onShowMap}
+                className="flex-1 py-4 border border-slate-300 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50"
+            >
+                VIEW MAP
+            </button>
+            
             {ride.status === 'pending' && (
-                <button onClick={() => onAction(ride.id, 'accept')} className="flex-1 bg-emerald-600 text-white py-4 rounded-xl font-black text-[9px] uppercase">Accept</button>
+                <button onClick={() => onAction(ride.id, 'accept')} className="flex-1 bg-emerald-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest">
+                    ACCEPT JOB
+                </button>
             )}
             {ride.status === 'accepted' && (
-                <button onClick={() => onAction(ride.id, 'start')} className="flex-1 bg-indigo-600 text-white py-4 rounded-xl font-black text-[9px] uppercase">Start</button>
+                <button onClick={() => onAction(ride.id, 'start')} className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest">
+                    START RIDE
+                </button>
             )}
             {ride.status === 'in_progress' && (
-                <button onClick={() => onAction(ride.id, 'complete')} className="flex-1 bg-slate-900 text-white py-4 rounded-xl font-black text-[9px] uppercase">Finish</button>
+                <button onClick={() => onAction(ride.id, 'complete')} className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest">
+                    COMPLETE
+                </button>
             )}
         </div>
+
+        {ride.payment_status && (
+            <div className="mt-4 text-right">
+                <span className={`text-xs font-bold ${ride.payment_status === 'paid' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {ride.payment_status.toUpperCase()}
+                </span>
+            </div>
+        )}
     </div>
 );
 
 const LoadingState = () => (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center">
+    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
         <div className="w-12 h-12 border-[5px] border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
     </div>
 );
 
 const NonDriverState = () => (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="bg-white p-10 rounded-[2.5rem] shadow-xl text-center">
-            <h2 className="text-2xl font-black italic">Pilot Access Required.</h2>
+        <div className="text-center">
+            <h2 className="text-3xl font-black italic">Driver Access Only</h2>
+            <p className="text-slate-500 mt-2">This dashboard is restricted to verified pilots.</p>
         </div>
     </div>
 );

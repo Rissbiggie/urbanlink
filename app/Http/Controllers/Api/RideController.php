@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Models\Ride;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 class RideController extends Controller
 {
     public function __construct(protected RideService $rideService, protected AuditService $auditService)
@@ -106,37 +107,68 @@ public function show(Request $request, int $id): JsonResponse
     }
 }
 
+public function cancel(Request $request, int $id): JsonResponse
+{
+    // 1. Fetch the ride first to check its current state
+    $ride = $request->user()->rides()->findOrFail($id);
+    
+    // 2. IMMEDIATE STATUS CHECK
+    // This prevents the 500 error by stopping the execution before 
+    // secondary services (Audit/Notification) try to process a cancelled ride.
+    if ($ride->status === 'cancelled') {
+        return response()->json([
+            'message' => 'This ride has already been cancelled.',
+            'status' => 'cancelled'
+        ], 422); // 422 is the standard for semantic/logic errors
+    }
 
-    public function cancel(Request $request, int $id): JsonResponse
-    {
-        $ride = $request->user()->rides()->findOrFail($id);
-        $this->authorize('cancel', $ride);
+    // 3. Authorization (Ensure the user has permission to cancel)
+    $this->authorize('cancel', $ride);
 
-        if (! in_array($ride->status, ['pending', 'accepted'], true)) {
-            return response()->json(['message' => 'Ride cannot be cancelled'], 422);
+    // 4. State Validation (Ensure it's not 'completed' or 'started')
+    if (! in_array($ride->status, ['pending', 'accepted'], true)) {
+        return response()->json([
+            'message' => 'Ride cannot be cancelled at this stage.',
+            'current_status' => $ride->status
+        ], 422);
+    }
+
+    // 5. Perform the Cancellation
+    $previousStatus = $ride->status;
+    $ride->status = 'cancelled';
+    $ride->save();
+
+    try {
+        // 6. Audit Logging
+        if (isset($this->auditService)) {
+            $this->auditService->logRideAction($request->user(), 'cancelled', $ride->id, [
+                'reason' => $request->input('reason', 'Cancelled via User Dashboard'),
+                'previous_status' => $previousStatus,
+            ]);
         }
 
-        $ride->status = 'cancelled';
-        $ride->save();
-
-        // Audit log the cancellation
-        $this->auditService->logRideAction($request->user(), 'cancelled', $ride->id, [
-            'reason' => $request->input('reason'),
-            'previous_status' => $ride->getOriginal('status'),
-        ]);
-
-        if ($ride->driver_profile_id) {
+        // 7. Notification Logic (Wrap in existence check to prevent 500s)
+        if ($ride->driver_profile_id && $ride->driver_profile) {
+            $ref = $ride->ride_reference ?? "#" . $ride->id;
             \App\Models\Notification::create([
                 'user_id' => $ride->driver_profile->user_id,
                 'type' => 'ride_cancelled',
                 'title' => 'Ride Cancelled',
-                'message' => "Ride ({$ride->ride_reference}) was cancelled by the passenger.",
+                'message' => "Ride ({$ref}) was cancelled by the passenger.",
                 'data' => ['ride_id' => $ride->id],
             ]);
         }
-
-        return response()->json(['message' => 'Ride cancelled']);
+    } catch (\Exception $e) {
+        // Silently log failures in secondary services to avoid crashing the main request
+        Log::error("Post-cancellation services failed: " . $e->getMessage());
     }
+
+    return response()->json([
+        'message' => 'Ride cancelled successfully',
+        'status' => 'cancelled'
+    ]);
+}
+
 public function rate(Request $request, int $id): JsonResponse
 {
     $data = $request->validate([

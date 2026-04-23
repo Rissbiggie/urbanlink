@@ -134,7 +134,6 @@ const RidesPage = () => {
 };
 
 // --- Atomic Components ---
-
 const RideCard = ({ ride, onCancel }) => {
     const statusConfig = {
         pending: "bg-amber-50 text-amber-600 border-amber-100",
@@ -143,6 +142,12 @@ const RideCard = ({ ride, onCancel }) => {
         completed: "bg-emerald-50 text-emerald-600 border-emerald-100",
         cancelled: "bg-slate-100 text-slate-400 border-slate-200"
     };
+
+    // Correctly mapping driver data from the profile structure
+    const driverName = ride.driver_profile?.user?.name || ride.driver?.name;
+    const vehicle = ride.driver_profile?.vehicle;
+    // Ensuring settlement amount shows the fare even before payment
+    const displayFare = ride.payment?.amount || ride.final_fare || ride.estimated_fare;
 
     return (
         <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden group hover:shadow-lg transition-all duration-500">
@@ -169,16 +174,20 @@ const RideCard = ({ ride, onCancel }) => {
                         </div>
                     </div>
 
-                    {/* Driver & Fare Context */}
+                    {/* Driver & Fare Context - UPDATED */}
                     <div className="w-full lg:w-72 space-y-6 lg:border-l lg:border-slate-100 lg:pl-8">
-                        {ride.driver ? (
+                        {driverName ? (
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-xl">👤</div>
+                                <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-xl font-black italic text-slate-300 shadow-inner">
+                                    {driverName.charAt(0)}
+                                </div>
                                 <div>
-                                    <p className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{ride.driver.name}</p>
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
-                                        {ride.driver.vehicle?.plate_number} • {ride.driver.vehicle?.model}
-                                    </p>
+                                    <p className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{driverName}</p>
+                                    {vehicle && (
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                                            {vehicle.plate_number} • {vehicle.make} {vehicle.model}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         ) : (
@@ -193,7 +202,7 @@ const RideCard = ({ ride, onCancel }) => {
                                 <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1">Settlement</p>
                                 <p className="text-xl font-black text-slate-900 tracking-tighter">
                                     <span className="text-xs italic mr-1 text-slate-400">KES</span>
-                                    {ride.payment?.amount?.toLocaleString() || '---'}
+                                    {displayFare ? Number(displayFare).toLocaleString() : '---'}
                                 </p>
                             </div>
                             <div className="text-right">
@@ -211,7 +220,7 @@ const RideCard = ({ ride, onCancel }) => {
                     <div className="flex lg:flex-col gap-3">
                         <Link 
                             to={`/rides/${ride.id}`}
-                            className="flex-1 lg:flex-none text-center bg-slate-50 hover:bg-slate-100 text-slate-900 py-3 px-6 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all"
+                            className="flex-1 lg:flex-none text-center bg-slate-900 text-white hover:bg-indigo-600 py-3 px-6 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all"
                         >
                             Log Data
                         </Link>
@@ -228,6 +237,7 @@ const RideCard = ({ ride, onCancel }) => {
             </div>
         </div>
     );
+
 };
 
 const FilterGroup = ({ label, children }) => (

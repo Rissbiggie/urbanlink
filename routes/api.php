@@ -110,7 +110,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/admin/applications/{id}/process', [AdminController::class, 'process'])->middleware('role:admin,government_officer');
     Route::post('/admin/drivers/{id}/reject', [DriverController::class, 'reject'])->middleware('role:admin');
     Route::patch('/admin/drivers/{id}/verify', [DriverController::class, 'verify'])->middleware( 'role:admin');
-    
+    Route::get('admin/allrides', [AdminController::class, 'getAllRides'])->middleware('role:admin,government_officer');
+    Route::get('/admin/all-applications', [AdminController::class, 'getAllApplications']);
 
     // Reports
     Route::get('/reports', [ReportController::class, 'index']);

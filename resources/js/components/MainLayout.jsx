@@ -17,22 +17,28 @@ export default function MainLayout({ children }) {
         citizen: [
             { label: 'Dashboard', path: '/' },
             { label: 'Book a Ride', path: '/rides/request' },
-            { label: 'My History', path: '/rides' },
+            { label: 'My Ride  History', path: '/rides' },
             { label: 'Payments', path: '/payments' },
+            { label: 'services', path: '/services' },
+            { label: 'My Applications', path: '/applications' },
+            
         ],
         driver: [
-            { label: 'Active Jobs', path: '/' },
-            { label: 'Earnings', path: '/driver/earnings' },
+            { label: 'Dashboard', path: '/' },
+          //  { label: 'Earnings', path: '/driver/earnings' },
             { label: 'Vehicle Profile', path: '/driver/vehicle' },
         ],
         government_officer: [
             { label: 'Compliances', path: '/' },
             { label: 'Applications', path: '/applications' },
+            { label: 'services', path: '/services' },
         ],
         admin: [
             { label: 'System Stats', path: '/' },
             { label: 'User Management', path: '/admin/users' },
-            { label: 'Global Rides', path: '/rides' },
+             { label: 'services', path: '/services' },
+              //{ label: ' Applications', path: '/applications' },
+            { label: 'Global Rides', path: '/globalrides' },
         ],
     };
 
